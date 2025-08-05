@@ -746,7 +746,8 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: ROS2
+    Android: ROS2;ISDK_OPENXR_HAND
+    Standalone: ISDK_OPENXR_HAND
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
