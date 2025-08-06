@@ -4,10 +4,11 @@ using RosMessageTypes.Geometry;
 
 public class WASDPublisher : MonoBehaviour
 {
-    ROSConnection ros;
+    private ROSConnection ros;
     public string topicName = "/cmd_vel";
-    public float linearSpeed = 0.5f;
-    public float angularSpeed = 1.0f;
+
+    private float linearVelocity = 0.0f;
+    private float angularVelocity = 0.0f;
 
     void Start()
     {
@@ -17,24 +18,25 @@ public class WASDPublisher : MonoBehaviour
 
     void Update()
     {
-        Vector3 linear = Vector3.zero;
-        Vector3 angular = Vector3.zero;
-
-        if (Input.GetKey(KeyCode.W))
-            linear.z += linearSpeed;
+        if (Input.GetKey(KeyCode.W)) linearVelocity += 0.05f;
+        if (Input.GetKey(KeyCode.X)) linearVelocity -= 0.05f;
+        if (Input.GetKey(KeyCode.A)) angularVelocity += 0.1f;
+        if (Input.GetKey(KeyCode.D)) angularVelocity -= 0.1f;
         if (Input.GetKey(KeyCode.S))
-            linear.z -= linearSpeed;
-        if (Input.GetKey(KeyCode.A))
-            angular.y += angularSpeed;
-        if (Input.GetKey(KeyCode.D))
-            angular.y -= angularSpeed;
-
-        TwistMsg twist = new TwistMsg
         {
-            linear = new Vector3Msg(linear.x, linear.y, linear.z),
-            angular = new Vector3Msg(angular.x, angular.y, angular.z)
-        };
+            linearVelocity = 0;
+            angularVelocity = 0;
+        }
+        // 속도 제한
+        linearVelocity = Mathf.Clamp(linearVelocity, -0.05f, 0.05f);
+        angularVelocity = Mathf.Clamp(angularVelocity, -0.1f, 0.1f);
 
+        // Twist 메시지 생성
+        TwistMsg twist = new TwistMsg();
+        twist.linear = new Vector3Msg(linearVelocity, 0, 0);
+        twist.angular = new Vector3Msg(0, 0, angularVelocity);
+
+        // 퍼블리시
         ros.Publish(topicName, twist);
     }
 }
