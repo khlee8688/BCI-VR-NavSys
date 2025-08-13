@@ -134,6 +134,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ROSConnectionPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3256622152468697706, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
+      propertyPath: m_RosIPAddress
+      value: 172.17.221.50
+      objectReference: {fileID: 0}
     - target: {fileID: 4139545691070287679, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -177,55 +181,35 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1905884453840539261, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 650131157}
   m_SourcePrefab: {fileID: 100100000, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
---- !u!1 &1074412379
+--- !u!1 &650131156 stripped
 GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1905884453840539261, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
+  m_PrefabInstance: {fileID: 650131155}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1074412381}
-  - component: {fileID: 1074412380}
-  m_Layer: 0
-  m_Name: WASDController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1074412380
+--- !u!114 &650131157
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1074412379}
+  m_GameObject: {fileID: 650131156}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3684305d866a17c43a7003d84182fd49, type: 3}
+  m_Script: {fileID: 11500000, guid: 1b2fbe6fd884e724a8d4fe2ed25092bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  topicName: /cmd_vel
-  linearSpeed: 0.5
-  angularSpeed: 1
---- !u!4 &1074412381
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1074412379}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  topicName: pose
+  publishFrequency: 0.1
+  robotOrientation:
+    x: 0
+    y: 0
+    z: 0
+    w: 1
 --- !u!1 &1119681789
 GameObject:
   m_ObjectHideFlags: 0
@@ -418,5 +402,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 1339044627}
   - {fileID: 1119681791}
-  - {fileID: 1074412381}
   - {fileID: 650131155}
