@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class StimulusSender : MonoBehaviour
 {
-    public string StreamName;
+    private string StreamName;
     string StreamType = "Markers";
 
     #region LSL4Unity_outlet
@@ -43,13 +43,13 @@ public class StimulusSender : MonoBehaviour
         string streamName = StreamName + "_Stimulations";
         string uniqueSourceId = gameObject.GetInstanceID().ToString();
 
-        StreamInfo streamInfo_stimulation = new StreamInfo(streamName, StreamType, ChannelCount, LSL.LSL.IRREGULAR_RATE, channel_format_t.cf_string, uniqueSourceId);
+        StreamInfo streamInfo_stimulation = new StreamInfo(streamName, StreamType, ChannelCount, 1.0, channel_format_t.cf_float32, uniqueSourceId);
         stimulationOutlet = new StreamOutlet(streamInfo_stimulation);
     }
 
     public void SendStimulation(string markerValue)
     {
-        string[] marker = new string[1]{ markerValue };
+        float[] marker = new float[1]{ 12.1f };
         if (stimulationOutlet != null)
         {
             stimulationOutlet.push_sample(marker);

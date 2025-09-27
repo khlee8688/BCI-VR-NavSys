@@ -136,6 +136,9 @@ GameObject:
   - component: {fileID: 2387959}
   - component: {fileID: 2387958}
   - component: {fileID: 2387957}
+  - component: {fileID: 2387965}
+  - component: {fileID: 2387964}
+  - component: {fileID: 2387963}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -255,6 +258,45 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -120, z: 0}
+--- !u!114 &2387963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24eea998a55e9ca47b7d87534b91beaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2387964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 933d5f178e0b9ef49a1afd0f28226417, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2387965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cf724b96587bfb49b581e9b2e236183, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StreamName: LSLExample
+  theReceiver: {fileID: 2387964}
+  theSender: {fileID: 2387963}
 --- !u!1 &35392805
 GameObject:
   m_ObjectHideFlags: 0

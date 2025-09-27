@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class StimulusReceiver : MonoBehaviour
 {
-    public string StreamName;
+    private string StreamName;
     ContinuousResolver resolver;
 
     double max_chunk_duration = 0.2;
