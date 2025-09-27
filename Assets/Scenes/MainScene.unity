@@ -136,6 +136,9 @@ GameObject:
   - component: {fileID: 2387959}
   - component: {fileID: 2387958}
   - component: {fileID: 2387957}
+  - component: {fileID: 2387965}
+  - component: {fileID: 2387964}
+  - component: {fileID: 2387963}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -168,7 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sphereRenderer: {fileID: 2387960}
-  signaliingURL: https://oarfish-amazing-barely.ngrok-free.app/offer
+  signaliingURL: https://lashawna-semifused-limberly.ngrok-free.app/offer
 --- !u!135 &2387959
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -255,6 +258,45 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -120, z: 0}
+--- !u!114 &2387963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24eea998a55e9ca47b7d87534b91beaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2387964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 933d5f178e0b9ef49a1afd0f28226417, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2387965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2387956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cf724b96587bfb49b581e9b2e236183, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StreamName: LSLExample
+  theReceiver: {fileID: 2387964}
+  theSender: {fileID: 2387963}
 --- !u!1 &35392805
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,7 +343,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3256622152468697706, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
       propertyPath: m_RosIPAddress
-      value: 172.17.221.50
+      value: 100.85.44.80
       objectReference: {fileID: 0}
     - target: {fileID: 4139545691070287679, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -451,7 +493,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _monoscopic: 0
   _sharpenType: 0
-  _enableDynamicResolution: 0
+  _enableDynamicResolution: 1
   minDynamicResolutionScale: 1
   maxDynamicResolutionScale: 1
   quest2MinDynamicResolutionScale: 0.7

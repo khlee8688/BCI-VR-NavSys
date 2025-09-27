@@ -15,7 +15,7 @@ public class WebRTCReceiver : MonoBehaviour
     private Texture receivedTexture;
     private bool hasNewFrame = false;
 
-    [SerializeField] string signaliingURL = "https://d46127388bb1.ngrok-free.app/offer";
+    [SerializeField] string signaliingURL = "https://lashawna-semifused-limberly.ngrok-free.app/offer";
 
     [System.Serializable]
     private class RTCSessionDescriptionJson
