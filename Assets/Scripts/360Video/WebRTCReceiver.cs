@@ -4,18 +4,20 @@ using UnityEngine.Networking;
 using UnityEngine.UI;
 using System.Collections;
 using System.Text;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 public class WebRTCReceiver : MonoBehaviour
 {
     private RTCPeerConnection pc;
     private VideoStreamTrack remoteVideoTrack;
-    //public RawImage targetRawImage;
     public Renderer sphereRenderer;
 
     private Texture receivedTexture;
     private bool hasNewFrame = false;
 
-    [SerializeField] string signaliingURL = "https://lashawna-semifused-limberly.ngrok-free.app/offer";
+    [SerializeField] string signalingURL = "https://lashawna-semifused-limberly.ngrok-free.app/offer";
 
     [System.Serializable]
     private class RTCSessionDescriptionJson
@@ -24,20 +26,23 @@ public class WebRTCReceiver : MonoBehaviour
         public string sdp;
     }
 
+    void Awake()
+    {
+        // SSL 인증서 검증 무시 (ngrok/테스트용)
+        ServicePointManager.ServerCertificateValidationCallback =
+            delegate (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                return true;
+            };
+    }
+
     IEnumerator Start()
     {
-        // Unity WebRTC 초기화 (필요시만 호출)
-        // WebRTC.Initialize();
-
-        // WebRTC.Update()를 코루틴으로 매 프레임 호출 (필수!)
         StartCoroutine(WebRTC.Update());
 
         var config = GetSelectedSdpSemantics();
         pc = new RTCPeerConnection(ref config);
 
-        //targetRawImage.texture = CreateRedTexture();
         sphereRenderer.material.mainTexture = CreateRedTexture();
-
 
         pc.OnConnectionStateChange += state =>
         {
@@ -52,7 +57,6 @@ public class WebRTCReceiver : MonoBehaviour
 
                 if (remoteVideoTrack != null && remoteVideoTrack != videoTrack)
                 {
-                    Debug.Log("[Unity] 이전 비디오 트랙 제거 및 해제");
                     remoteVideoTrack.OnVideoReceived -= OnVideoFrameReceived;
                     remoteVideoTrack.Dispose();
                 }
@@ -91,14 +95,19 @@ public class WebRTCReceiver : MonoBehaviour
             yield break;
         }
 
+        // SDP 줄바꿈 안전 변환
+        var safeSdp = offerDesc.sdp.Replace("\r\n", "\\r\\n");
+
         var dto = new RTCSessionDescriptionJson
         {
             type = offerDesc.type.ToString().ToLower(),
-            sdp = offerDesc.sdp
+            sdp = safeSdp
         };
 
         string json = JsonUtility.ToJson(dto);
-        using (UnityWebRequest req = new UnityWebRequest(signaliingURL, "POST"))
+        Debug.Log($"[Unity] 시그널링 전송 JSON: {json.Substring(0, Mathf.Min(json.Length, 200))}...");
+
+        using (UnityWebRequest req = new UnityWebRequest(signalingURL, "POST"))
         {
             req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -112,11 +121,15 @@ public class WebRTCReceiver : MonoBehaviour
             if (req.isNetworkError || req.isHttpError)
 #endif
             {
-                Debug.LogError("[Unity] 시그널링 요청 실패: " + req.error);
+                Debug.LogError($"[Unity] 시그널링 요청 실패: {req.responseCode} {req.error}");
+                Debug.LogError("[Unity] 응답 본문: " + req.downloadHandler.text);
                 yield break;
             }
 
             var answer = JsonUtility.FromJson<RTCSessionDescriptionJson>(req.downloadHandler.text);
+            // 서버에서 받은 SDP도 복원
+            answer.sdp = answer.sdp.Replace("\\r\\n", "\r\n");
+
             var answerDesc = new RTCSessionDescription
             {
                 type = RTCSdpType.Answer,
@@ -144,7 +157,6 @@ public class WebRTCReceiver : MonoBehaviour
             return;
         }
 
-        // 메인 스레드에서 텍스처 교체를 위해 저장
         receivedTexture = tex;
         hasNewFrame = true;
         Debug.Log("Got new frame");
@@ -152,13 +164,9 @@ public class WebRTCReceiver : MonoBehaviour
 
     void Update()
     {
-        // 프레임 업데이트 시 텍스처 교체만 수행
         if (hasNewFrame)
         {
-            //targetRawImage.texture = receivedTexture;
             sphereRenderer.material.mainTexture = receivedTexture;
-
-            Debug.Log("frame to sphere");
             hasNewFrame = false;
         }
     }
@@ -169,10 +177,7 @@ public class WebRTCReceiver : MonoBehaviour
         {
             iceServers = new RTCIceServer[]
             {
-                new RTCIceServer
-                {
-                    urls = new[] { "stun:stun.l.google.com:19302" }
-                }
+                new RTCIceServer { urls = new[] { "stun:stun.l.google.com:19302" } }
             }
         };
     }
@@ -189,9 +194,6 @@ public class WebRTCReceiver : MonoBehaviour
         pc?.Close();
         pc?.Dispose();
         pc = null;
-
-        // WebRTC 리소스 해제 (필요시 호출)
-        //WebRTC.Dispose();
     }
 
     private Texture2D CreateRedTexture(int width = 128, int height = 128)
