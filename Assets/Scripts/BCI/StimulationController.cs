@@ -54,7 +54,7 @@ public class StimulusController : MonoBehaviour
         int id = queue.Dequeue();
 
         OnStimulus?.Invoke(id);
-        sender?.SendStimulation(id);
+        sender?.SendStimulation(((byte)id));
         highlighter?.Highlight(id);
 
         timer = interval;
