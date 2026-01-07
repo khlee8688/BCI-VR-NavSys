@@ -325,7 +325,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 806659410}
-  - component: {fileID: 806659409}
   m_Layer: 0
   m_Name: YOLOManager
   m_TagString: Untagged
@@ -333,26 +332,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &806659409
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 806659408}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f2ae516e51d5f84abe18e82af7bd2db, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  modelAsset: {fileID: 5022602860645237092, guid: a3c617a8e9081b340b854500b2d1f105, type: 3}
-  classesAsset: {fileID: 4900000, guid: 55cb846531fe6c345b0e01e0d9c495d7, type: 3}
-  borderTexture: {fileID: 2800000, guid: 285f80b4405d9554692f73f6b88264ea, type: 3}
-  font: {fileID: 12800000, guid: 997a43b767814dd0a7642ec9b78cba41, type: 3}
-  mainCamera: {fileID: 524812066}
-  displayImage: {fileID: 940701988}
-  iouThreshold: 0.5
-  scoreThreshold: 0.5
 --- !u!4 &806659410
 Transform:
   m_ObjectHideFlags: 0

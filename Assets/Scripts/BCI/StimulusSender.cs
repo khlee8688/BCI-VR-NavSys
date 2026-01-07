@@ -47,13 +47,13 @@ public class StimulusSender : MonoBehaviour
         stimulationOutlet = new StreamOutlet(streamInfo_stimulation);
     }
 
-    public void SendStimulation(string markerValue)
+    public void SendStimulation(int instanceID)
     {
-        float[] marker = new float[1]{ 12.1f };
+        float[] marker = new float[1]{ instanceID };
         if (stimulationOutlet != null)
         {
             stimulationOutlet.push_sample(marker);
-            Debug.Log("Sent data: " + markerValue);
+            Debug.Log("Sent data: " + instanceID);
         }
     }
 }
