@@ -28,7 +28,7 @@ public class ExperimentManager : MonoBehaviour
         experimentInitialized = false;
 
         tracker = new ObjectTracker();
-        tracker.OnReferenceLost += AbortExperiment;
+        // tracker.OnReferenceLost += AbortExperiment;
 
         detector.EnableDetection(true);
 
