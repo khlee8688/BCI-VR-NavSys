@@ -60,7 +60,12 @@ public class ObjectHighlighter : MonoBehaviour
     void UpdateBoxTransform(GameObject box, ExperimentObject obj)
     {
         RectTransform rt = box.GetComponent<RectTransform>();
-        rt.anchoredPosition = obj.bbox.center;
+        Rect canvasRect = canvasRoot.rect;
+
+        float x = obj.bbox.center.x - canvasRect.width / 2f;
+        float y = canvasRect.height / 2f - obj.bbox.center.y;
+
+        rt.anchoredPosition = new Vector2(x, y);
         rt.sizeDelta = obj.bbox.size;
 
         Text label = box.GetComponentInChildren<Text>();

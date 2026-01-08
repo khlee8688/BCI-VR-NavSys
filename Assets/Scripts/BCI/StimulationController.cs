@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class StimulusController : MonoBehaviour
 {
-    public StimulusSender sender;
-    public ObjectHighlighter highlighter;
+    [SerializeField] StimulusSender sender;
+    [SerializeField] ObjectHighlighter highlighter;
 
     [Tooltip("한 세트(n개 전체 랜덤)를 몇 번 반복할지")]
     public int totalTrials = 20;

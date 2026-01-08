@@ -1,24 +1,54 @@
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 public class ObjectTracker
 {
-    int nextObjectId = 0;
-    List<ExperimentObject> objects = new();
+    // 기준 오브젝트 저장 (trackId와 objectId 포함)
+    private Dictionary<int, ExperimentObject> referenceObjects = new Dictionary<int, ExperimentObject>();
 
+    // 기준 오브젝트 중 하나라도 사라지면 호출
+    public Action OnReferenceLost;
+
+    /// <summary>
+    /// Update 호출 시,
+    /// - referenceObjects가 없으면 처음 들어온 탐지로 reference 설정
+    /// - referenceObjects가 있으면 bbox만 갱신, 새 객체는 무시
+    /// </summary>
     public List<ExperimentObject> Update(List<Detection> detections)
     {
-        foreach (var obj in objects)
-            obj.trackId = -1;
+        // 1. Reference가 없으면 처음 들어온 탐지로 설정
+        if (referenceObjects.Count == 0 && detections.Count > 0)
+        {
+            int nextObjectId = 0;
+            int nextTrackId = 0;
+            foreach (var d in detections)
+            {
+                var obj = new ExperimentObject
+                {
+                    objectId = nextObjectId++,
+                    trackId = nextTrackId++,
+                    label = d.label,
+                    bbox = ToRect(d)
+                };
+                referenceObjects[obj.objectId] = obj;
+            }
+            return referenceObjects.Values.ToList();
+        }
+
+        // 2. Reference가 이미 있으면 bbox 갱신
+        HashSet<int> detectedIds = new HashSet<int>();
 
         foreach (var d in detections)
         {
             Rect r = ToRect(d);
-            ExperimentObject best = null;
-            float bestIoU = 0;
 
-            foreach (var o in objects)
+            // 기존 reference 중 가장 IoU가 높은 것과 매칭
+            ExperimentObject best = null;
+            float bestIoU = 0f;
+
+            foreach (var o in referenceObjects.Values)
             {
                 float iou = IoU(o.bbox, r);
                 if (iou > bestIoU)
@@ -28,23 +58,22 @@ public class ObjectTracker
                 }
             }
 
-            if (bestIoU > 0.3f)
+            if (best != null && bestIoU > 0.3f)
             {
                 best.bbox = r;
                 best.label = d.label;
-            }
-            else
-            {
-                objects.Add(new ExperimentObject
-                {
-                    objectId = nextObjectId++,
-                    label = d.label,
-                    bbox = r
-                });
+                detectedIds.Add(best.objectId);
             }
         }
 
-        return objects;
+        // 3. 기준 오브젝트 중 하나라도 없으면 이벤트 호출
+        bool lostAny = referenceObjects.Keys.Except(detectedIds).Any();
+        if (lostAny)
+        {
+            OnReferenceLost?.Invoke();
+        }
+
+        return referenceObjects.Values.ToList();
     }
 
     Rect ToRect(Detection d)
@@ -66,5 +95,10 @@ public class ObjectTracker
         float inter = Mathf.Max(0, x2 - x1) * Mathf.Max(0, y2 - y1);
         float uni = a.width * a.height + b.width * b.height - inter;
         return uni > 0 ? inter / uni : 0;
+    }
+
+    public void Reset()
+    {
+        referenceObjects.Clear();
     }
 }

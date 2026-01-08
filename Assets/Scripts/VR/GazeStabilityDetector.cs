@@ -35,6 +35,7 @@ public class GazeStabilityDetector : MonoBehaviour
                 stableTimer += Time.deltaTime;
                 if (stableTimer >= lockTime)
                 {
+                    referenceForward = currentForward;
                     locked = true;
                     OnLocked?.Invoke();
                 }

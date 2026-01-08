@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class ConnectionTest : MonoBehaviour
 {
-    [SerializeField] string StreamName = "LSLExample";
-    float speed = .1f;
     [SerializeField] StimulusSender theSender;
 
     // Start is called before the first frame update
