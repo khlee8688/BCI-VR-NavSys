@@ -7,14 +7,27 @@ public class StimulusController : MonoBehaviour
     [SerializeField] StimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
 
-    [Tooltip("한 세트(n개 전체 랜덤)를 몇 번 반복할지")]
+    [Header("Timing")]
     public int totalTrials = 20;
-    public float interval = 0.1f;
+    public float startDelay = 0.1f;
+    public float interval = 0.3f;            // stimulus ON time
+    public float timeBetweenArrows = 0.1f;   // stimulus OFF gap
 
     public event Action<int> OnStimulus;
 
     readonly Queue<int> queue = new();
-    float timer;
+
+    enum State
+    {
+        Idle,
+        StartDelay,
+        StimulusOn,
+        Gap
+    }
+
+    State state = State.Idle;
+    float timer = 0f;
+    int currentId = -1;
 
     public void StartExperiment(List<ExperimentObject> objs)
     {
@@ -22,7 +35,6 @@ public class StimulusController : MonoBehaviour
 
         int n = objs.Count;
         int m = totalTrials;
-
         var rnd = new System.Random();
 
         for (int k = 0; k < m; k++)
@@ -41,28 +53,60 @@ public class StimulusController : MonoBehaviour
                 queue.Enqueue(objs[indices[i]].objectId);
         }
 
-        timer = 0f;
+        timer = startDelay;
+        state = State.StartDelay;
     }
 
     void Update()
     {
-        if (queue.Count == 0) return;
+        if (state == State.Idle) return;
 
         timer -= Time.deltaTime;
         if (timer > 0f) return;
 
-        int id = queue.Dequeue();
+        switch (state)
+        {
+            case State.StartDelay:
+                NextStimulus();
+                break;
 
-        OnStimulus?.Invoke(id);
-        sender?.SendStimulation(((byte)id));
-        highlighter?.Highlight(id);
+            case State.StimulusOn:
+                // 자극 OFF
+                highlighter.ClearHighlight();
+                timer = timeBetweenArrows;
+                state = State.Gap;
+                break;
+
+            case State.Gap:
+                NextStimulus();
+                break;
+        }
+    }
+
+    void NextStimulus()
+    {
+        if (queue.Count == 0)
+        {
+            state = State.Idle;
+            return;
+        }
+
+        currentId = queue.Dequeue();
+
+        OnStimulus?.Invoke(currentId);
+        sender?.SendStimulation((byte)currentId);
+        highlighter?.Highlight(currentId);
 
         timer = interval;
+        state = State.StimulusOn;
     }
 
     public void ResetExperiment()
     {
         queue.Clear();
         timer = 0f;
+        state = State.Idle;
+        currentId = -1;
+        highlighter?.ClearHighlight();
     }
 }
