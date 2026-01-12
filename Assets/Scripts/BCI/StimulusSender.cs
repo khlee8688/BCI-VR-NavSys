@@ -1,59 +1,50 @@
-using System.Collections;
-using System.Collections.Generic;
 using LSL;
 using LSL4Unity.Utils;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class StimulusSender : MonoBehaviour
 {
     private string StreamName;
     string StreamType = "Markers";
+    string StreamType2= "Stream";
+    int[] sample = new int[1];
 
     #region LSL4Unity_outlet
     int ChannelCount = 1;
-    private StreamOutlet stimulationOutlet;
+    private StreamOutlet markerOutlet;
+    private StreamOutlet signalOutlet; // marker stream만으로는 연결이 안 됨. signal stream이 무조건 필요.
     #endregion
 
-    public virtual bool open(string streamName)
-    {
-        StreamName = streamName;
-        if (!StreamName.Equals(""))
-            SetupStimulusOutlet();
-        else
-        {
-            Debug.LogError("Object must specify a name for resolver to lookup a stream");
-            this.enabled = false;
-            return false;
-        }
-        return true;
-    }
-
-    public virtual void close()
-    {
-        if (stimulationOutlet != null)
-        {
-            stimulationOutlet.Dispose();
-            stimulationOutlet = null;
-            Debug.Log("StimulusSender closed.");
-        }
-    }
-
-    private void SetupStimulusOutlet()
+    void Start()
     {
         string streamName = StreamName + "_Stimulations";
-        string uniqueSourceId = gameObject.GetInstanceID().ToString();
 
-        StreamInfo streamInfo_stimulation = new StreamInfo(streamName, StreamType, ChannelCount, 1.0, channel_format_t.cf_float32, uniqueSourceId);
-        stimulationOutlet = new StreamOutlet(streamInfo_stimulation);
+        var hash = new Hash128();
+        hash.Append("P300Stimulus");
+        hash.Append(gameObject.GetInstanceID());
+
+        StreamInfo streamInfo_stimulation = new StreamInfo(streamName, StreamType, ChannelCount, LSL.LSL.IRREGULAR_RATE, channel_format_t.cf_int32, hash.ToString());
+        markerOutlet = new StreamOutlet(streamInfo_stimulation);
+
+        StreamInfo streamInfo_stream = new StreamInfo(streamName, StreamType2, ChannelCount, LSL.LSL.IRREGULAR_RATE, channel_format_t.cf_float32, hash.ToString());
+        signalOutlet = new StreamOutlet(streamInfo_stream);
     }
 
-    public void SendStimulation(string markerValue)
+    private void Update()
     {
-        float[] marker = new float[1]{ 12.1f };
-        if (stimulationOutlet != null)
+        signalOutlet.push_sample(sample); // siganl stream의 sample frequency가 0이어도 실행이 안 되는 문제 해결을 위한 코드 (보낸 값은 사용 안 됨)
+    }
+
+    public void SendStimulation(byte instanceID)
+    {
+        sample[0] = instanceID;
+        if (markerOutlet != null)
         {
-            stimulationOutlet.push_sample(marker);
-            Debug.Log("Sent data: " + markerValue);
+            markerOutlet.push_sample(sample);
+            Debug.Log("Sent data: " + instanceID);
         }
     }
 }
