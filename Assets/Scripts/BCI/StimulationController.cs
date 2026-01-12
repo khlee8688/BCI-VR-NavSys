@@ -9,8 +9,8 @@ public class StimulusController : MonoBehaviour
 
     [Header("Timing")]
     public int totalTrials = 20;
-    public float startDelay = 0.1f;
-    public float interval = 0.3f;            // stimulus ON time
+    public float startDelay = 0.0f;
+    public float interval = 0.1f;            // stimulus ON time
     public float timeBetweenArrows = 0.1f;   // stimulus OFF gap
 
     public event Action<int> OnStimulus;

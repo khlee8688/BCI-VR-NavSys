@@ -183,7 +183,9 @@ MonoBehaviour:
   sender: {fileID: 352968183}
   highlighter: {fileID: 806659411}
   totalTrials: 40
-  interval: 0.3
+  startDelay: 0
+  interval: 0.1
+  timeBetweenArrows: 0.1
 --- !u!4 &352968185
 Transform:
   m_ObjectHideFlags: 0
