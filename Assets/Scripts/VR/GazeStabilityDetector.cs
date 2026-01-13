@@ -18,6 +18,7 @@ public class GazeStabilityDetector : MonoBehaviour
     Vector3 referenceForward;
     float stableTimer;
     bool locked;
+    bool gazeCheck = true;
 
     void Update()
     {
@@ -60,5 +61,16 @@ public class GazeStabilityDetector : MonoBehaviour
     {
         locked = false;
         stableTimer = 0f;
+    }
+
+    public void StopGazeCheck()
+    {
+        gazeCheck = false;
+    }
+
+    public void StartGazeCheck()
+    {
+        gazeCheck = true;
+        ResetState();
     }
 }

@@ -2,11 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using Meta.WitAi;
-
+using UnityEngine.EventSystems;
 public class ObjectHighlighter : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField] private RectTransform canvasRoot;
+    public RectTransform canvasRoot;
     [SerializeField] private Sprite borderSprite;
     [SerializeField] private Font font;
 
@@ -57,6 +57,10 @@ public class ObjectHighlighter : MonoBehaviour
             kv.Value.SetActive(false);
     }
 
+    public GameObject GetBoxFromObjectID(int objectId)
+    {
+        return boxMap[objectId];
+    }
 
     void UpdateBoxTransform(GameObject box, ExperimentObject obj)
     {
@@ -68,6 +72,8 @@ public class ObjectHighlighter : MonoBehaviour
 
         rt.anchoredPosition = new Vector2(x, y);
         rt.sizeDelta = obj.bbox.size;
+
+        box.GetComponent<BoxClickHandler>().objectId = obj.objectId;
 
         Text label = box.GetComponentInChildren<Text>();
         label.text = $"{obj.label} ({obj.objectId})";
@@ -99,6 +105,9 @@ public class ObjectHighlighter : MonoBehaviour
         img.sprite = borderSprite;
         img.type = Image.Type.Sliced;
         img.color = normalColor;
+        img.raycastTarget = true;
+
+        panel.AddComponent<BoxClickHandler>();
 
         var rt = panel.GetComponent<RectTransform>();
         rt.pivot = new Vector2(0.5f, 0.5f);

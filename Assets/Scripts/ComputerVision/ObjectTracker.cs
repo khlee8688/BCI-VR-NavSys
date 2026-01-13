@@ -67,4 +67,9 @@ public class ObjectTracker
         float uni = a.width * a.height + b.width * b.height - inter;
         return uni > 0 ? inter / uni : 0;
     }
+
+    public ExperimentObject GetObjectById(int id)
+    {
+        return objects[id];
+    }
 }

@@ -134,6 +134,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ROSConnectionPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3256622152468697706, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
+      propertyPath: m_RosIPAddress
+      value: 172.17.220.161
+      objectReference: {fileID: 0}
     - target: {fileID: 4139545691070287679, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -209,8 +213,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   topicName: /cmd_vel
-  linearSpeed: 0.5
-  angularSpeed: 1
 --- !u!4 &1074412381
 Transform:
   m_ObjectHideFlags: 0
