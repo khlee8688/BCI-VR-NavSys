@@ -19,10 +19,10 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] GameObject player;
 
     [Header("Robot Timing")]
-    [SerializeField] float moveDuration = 2.0f;
+    [SerializeField] float moveDuration = 5.0f;
 
     [Header("Robot Motion Params")]
-    [SerializeField] float angularSpeedDegPerSec = 10f;
+    [SerializeField] float angularSpeedDegPerSec = 12f;
 
     ObjectTracker tracker;
     bool experimentRunning = false;
@@ -99,6 +99,7 @@ public class ExperimentManager : MonoBehaviour
 
         int selectedId = 0; // TO-DO: Online LDA °á°ú
         selectedObject = tracker.GetObjectById(selectedId);
+        Debug.Log(selectedObject.label);
         if (selectedObject == null) return;
 
         navRoutine = StartCoroutine(RotateThenMoveCoroutine());
@@ -147,7 +148,7 @@ public class ExperimentManager : MonoBehaviour
 
         if (Mathf.Abs(yaw) > 1f)
         {
-            bool rotateRight = yaw > 0f;
+            bool rotateRight = !(yaw > 0f);
             float rotateDuration = Mathf.Abs(yaw) / angularSpeedDegPerSec;
 
             float t = 0f;
