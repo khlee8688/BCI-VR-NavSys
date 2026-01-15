@@ -135,7 +135,6 @@ public class ExperimentManager : MonoBehaviour
 
         int selectedId = 1; // TO-DO: Online LDA °á°ú
         selectedObject = GetObjectById(selectedId);
-        Debug.Log(selectedObject.bbox);
         if (selectedObject == null) return;
 
         helperText.text = "Object Selected: " + selectedObject.label;
@@ -194,7 +193,6 @@ public class ExperimentManager : MonoBehaviour
         RectTransform rt = box.GetComponent<RectTransform>();
 
         Vector3 worldPos = rt.position;
-        Debug.Log(worldPos);
         Vector3 camPos = vrCamera.transform.position;
 
         Ray ray = new Ray(camPos, (worldPos-camPos).normalized);
