@@ -274,7 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cam: {fileID: 524812066}
-  lockTime: 1
+  lockTime: 5
   lockAngle: 5
   breakAngle: 5
 --- !u!114 &352968187

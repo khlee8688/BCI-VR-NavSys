@@ -99,7 +99,6 @@ public class StimulusController : MonoBehaviour
         OnStimulus?.Invoke(currentId);
         sender?.SendStimulation((byte)currentId);
         highlighter?.Highlight(currentId);
-
         timer = interval;
         state = State.StimulusOn;
     }

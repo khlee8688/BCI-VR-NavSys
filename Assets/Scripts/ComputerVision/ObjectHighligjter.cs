@@ -14,6 +14,8 @@ public class ObjectHighlighter : MonoBehaviour
     [SerializeField] private Color normalColor = Color.clear;
     [SerializeField] private Color highlightColor = Color.red;
 
+    [SerializeField] UIHighlighter uiHighlighter;
+
     private Dictionary<int, GameObject> boxMap = new Dictionary<int, GameObject>();
 
     public void UpdateObjects(List<ExperimentObject> objects)
@@ -38,6 +40,15 @@ public class ObjectHighlighter : MonoBehaviour
 
     public void Highlight(int objectId)
     {
+        // UI ¹öÆ°
+        if (objectId <= 2)
+        {
+            ClearHighlight();
+            uiHighlighter.UIHighlight(objectId);
+            return;
+        }
+
+        // YOLO °´Ã¼
         foreach (var kv in boxMap)
         {
             bool active = kv.Key == objectId;
@@ -49,6 +60,8 @@ public class ObjectHighlighter : MonoBehaviour
     {
         foreach (var kv in boxMap)
             SetBoxColor(kv.Value, normalColor, false);
+
+        uiHighlighter.Clear();
     }
 
     public void ClearAll()
