@@ -14,6 +14,7 @@ public class StimulusController : MonoBehaviour
     public float timeBetweenArrows = 0.1f;   // stimulus OFF gap
 
     public event Action<int> OnStimulus;
+    public event Action OnStimulusEnd;
 
     readonly Queue<int> queue = new();
 
@@ -71,7 +72,6 @@ public class StimulusController : MonoBehaviour
                 break;
 
             case State.StimulusOn:
-                // ÀÚ±Ø OFF
                 highlighter.ClearHighlight();
                 timer = timeBetweenArrows;
                 state = State.Gap;
@@ -88,6 +88,9 @@ public class StimulusController : MonoBehaviour
         if (queue.Count == 0)
         {
             state = State.Idle;
+            currentId = -1;
+            highlighter?.ClearHighlight();
+            OnStimulusEnd?.Invoke();
             return;
         }
 
@@ -96,7 +99,6 @@ public class StimulusController : MonoBehaviour
         OnStimulus?.Invoke(currentId);
         sender?.SendStimulation((byte)currentId);
         highlighter?.Highlight(currentId);
-
         timer = interval;
         state = State.StimulusOn;
     }

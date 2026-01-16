@@ -4,19 +4,16 @@ using System.Linq;
 
 public class ObjectTracker
 {
-    int nextObjectId = 0;
+    int nextObjectId = 3; // 1, 2ดย UI ภüฟ๋
     List<ExperimentObject> objects = new();
 
     public List<ExperimentObject> Update(List<Detection> detections)
     {
-        foreach (var obj in objects)
-            obj.trackId = -1;
-
         foreach (var d in detections)
         {
             Rect r = ToRect(d);
             ExperimentObject best = null;
-            float bestIoU = 0;
+            float bestIoU = 0f;
 
             foreach (var o in objects)
             {

@@ -44,7 +44,7 @@ public class StimulusSender : MonoBehaviour
         if (markerOutlet != null)
         {
             markerOutlet.push_sample(sample);
-            Debug.Log("Sent data: " + instanceID);
+            // Debug.Log("Sent data: " + instanceID);
         }
     }
 }

@@ -1,18 +1,45 @@
+using Oculus.Interaction.UnityCanvas;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
+using TMPro;
+using UnityEditor.SearchService;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ExperimentManager : MonoBehaviour
 {
+    [Header("Core")]
     [SerializeField] GazeStabilityDetector gaze;
     [SerializeField] LiveYOLODetector detector;
     [SerializeField] StimulusController stimulus;
     [SerializeField] ObjectHighlighter highlighter;
+    [SerializeField] RobotController robot;
+    [SerializeField] RectTransform canvasRoot;
+    [SerializeField] TMP_Text helperText;
+
+    [Header("Player")]
+    [SerializeField] Camera vrCamera;
+    [SerializeField] GameObject player;
+
+    [Header("Robot Timing")]
+    [SerializeField] float moveDuration = 5.0f;
+
+    [Header("Robot Motion Params")]
+    [SerializeField] float angularSpeedDegPerSec = 12f;
+
+    [SerializeField] Button arrowButton;
 
     ObjectTracker tracker;
-
     bool experimentRunning = false;
     bool experimentInitialized = false;
+    bool objectSelected = false;
+
+    ExperimentObject selectedObject;
+    ExperimentObject arrowButtonObject;
+    ExperimentObject exitButtonObject;
+    Coroutine navRoutine;
+
+    List<ExperimentObject> allObjects;
 
     void Start()
     {
@@ -20,19 +47,36 @@ public class ExperimentManager : MonoBehaviour
         gaze.OnBroken += AbortExperiment;
 
         detector.OnDetections += OnDetections;
+        stimulus.OnStimulusEnd += OnStimulusEnd;
+
+        BoxClickHandler.OnBoxClicked += OnBoxClicked;
     }
 
     void StartExperiment()
     {
         experimentRunning = true;
         experimentInitialized = false;
+        objectSelected = false;
+
+        helperText.text = "Hold your gaze in one direction";
 
         tracker = new ObjectTracker();
-        // tracker.OnReferenceLost += AbortExperiment;
+
+        arrowButtonObject = new ExperimentObject
+        {
+            objectId = 1,
+            label = "Arrow_Button",
+            bbox = new Rect()
+        };
+
+        exitButtonObject = new ExperimentObject
+        {
+            objectId = 2,
+            label = "Exit_Button",
+            bbox = new Rect()
+        };
 
         detector.EnableDetection(true);
-
-        Debug.Log("Experiment START");
     }
 
     void AbortExperiment()
@@ -41,27 +85,219 @@ public class ExperimentManager : MonoBehaviour
 
         experimentRunning = false;
         experimentInitialized = false;
+        objectSelected = false;
+
+        if (navRoutine != null)
+        {
+            StopCoroutine(navRoutine);
+            navRoutine = null;
+        }
+
+        helperText.text = "Experiment Aborted";
 
         detector.EnableDetection(false);
         stimulus.ResetExperiment();
         gaze.ResetState();
         highlighter.ClearAll();
-
-        Debug.Log("Experiment ABORTED ¡æ reset");
+        robot.Stop();
     }
 
     void OnDetections(List<Detection> detections)
     {
         if (!experimentRunning) return;
+        if (objectSelected) return;
 
-        var objects = tracker.Update(detections);
+        var trackedObjects = tracker.Update(detections);
 
-        highlighter.UpdateObjects(objects);
+        allObjects = new List<ExperimentObject>();
+        allObjects.Add(arrowButtonObject);
+        allObjects.Add(exitButtonObject);
+        allObjects.AddRange(trackedObjects); // id >= 3
 
-        if (!experimentInitialized && objects.Count > 0)
+        highlighter.UpdateObjects(allObjects);
+
+        helperText.text = "Look at a target or a control button";
+
+        if (!experimentInitialized && allObjects.Count > 0)
         {
             experimentInitialized = true;
-            stimulus.StartExperiment(objects);
+            stimulus.StartExperiment(allObjects);
         }
+    }
+
+    void OnStimulusEnd()
+    {
+        if (!experimentRunning) return;
+
+        detector.EnableDetection(false);
+        stimulus.ResetExperiment();
+        gaze.StopGazeCheck();
+
+        int selectedId = 1; // TO-DO: Online LDA °á°ú
+        selectedObject = GetObjectById(selectedId);
+        if (selectedObject == null) return;
+
+        helperText.text = "Target selected: " + selectedObject.label;
+
+        if(selectedId == 1)
+        {
+            navRoutine = StartCoroutine(MoveToLookingDirection());
+        }
+        else if(selectedId == 2)
+        {
+            Application.Quit();
+        }
+        else
+        {
+            navRoutine = StartCoroutine(RotateThenMoveCoroutine());
+        }
+    }
+
+    void OnBoxClicked(int objectId)
+    {
+        if (!experimentRunning) return;
+        if (objectSelected) return;
+
+        objectSelected = true;
+
+        detector.EnableDetection(false);
+        stimulus.ResetExperiment();
+        gaze.StopGazeCheck();
+        highlighter.ClearAll();
+
+        selectedObject = GetObjectById(objectId);
+        if (selectedObject == null) return;
+
+        helperText.text = "Target selected: " + selectedObject.label;
+
+        if (navRoutine != null)
+            StopCoroutine(navRoutine);
+
+        if (objectId == 1)
+        {
+            navRoutine = StartCoroutine(MoveToLookingDirection());
+        }
+        else if (objectId == 2)
+        {
+            Application.Quit();
+        }
+        else
+        {
+            navRoutine = StartCoroutine(RotateThenMoveCoroutine());
+        }
+    }
+
+    IEnumerator RotateThenMoveCoroutine()
+    {
+        GameObject box = highlighter.GetBoxFromObjectID(selectedObject.objectId);
+        RectTransform rt = box.GetComponent<RectTransform>();
+
+        Vector3 worldPos = rt.position;
+        Vector3 camPos = vrCamera.transform.position;
+
+        Ray ray = new Ray(camPos, (worldPos-camPos).normalized);
+
+        Debug.DrawRay(ray.origin, ray.direction * 150f, Color.red, 20f);
+
+        Vector3 baseForward = player.transform.forward;
+        Vector3 targetDir = ray.direction;
+
+        float yaw = CalculateSignedYaw(baseForward, targetDir);
+
+        helperText.text = "Robot is moving";
+
+        if (Mathf.Abs(yaw) > 1f)
+        {
+            bool rotateRight = !(yaw > 0f);
+            float rotateDuration = Mathf.Abs(yaw) / angularSpeedDegPerSec;
+
+            float t = 0f;
+            while (t < rotateDuration)
+            {
+                if (rotateRight)
+                    robot.TurnRight();
+                else
+                    robot.TurnLeft();
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            robot.Stop();
+        }
+
+        float mt = 0f;
+        while (mt < moveDuration)
+        {
+            robot.MoveForward();
+            mt += Time.deltaTime;
+            yield return null;
+        }
+
+        robot.Stop();
+        helperText.text = "Destination reached";
+        gaze.StartGazeCheck();
+    }
+    IEnumerator MoveToLookingDirection()
+    {
+        Vector3 baseForward = player.transform.forward;
+        Vector3 camForward = vrCamera.transform.forward;
+
+        float yaw = CalculateSignedYaw(baseForward, camForward);
+
+        helperText.text = "Moving in the looking direction";
+
+        if (Mathf.Abs(yaw) > 1f)
+        {
+            bool rotateRight = !(yaw > 0f);
+            float rotateDuration = Mathf.Abs(yaw) / angularSpeedDegPerSec;
+
+            float t = 0f;
+            while (t < rotateDuration)
+            {
+                if (rotateRight)
+                    robot.TurnRight();
+                else
+                    robot.TurnLeft();
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            robot.Stop();
+        }
+
+        float mt = 0f;
+        while (mt < moveDuration)
+        {
+            robot.MoveForward();
+            mt += Time.deltaTime;
+            yield return null;
+        }
+
+        robot.Stop();
+        helperText.text = "Destination reached";
+        gaze.StartGazeCheck();
+    }
+
+    float CalculateSignedYaw(Vector3 baseForward, Vector3 targetDir)
+    {
+        baseForward.y = 0f;
+        targetDir.y = 0f;
+
+        baseForward.Normalize();
+        targetDir.Normalize();
+
+        return Vector3.SignedAngle(baseForward, targetDir, Vector3.up);
+    }
+
+    ExperimentObject GetObjectById(int id)
+    {
+        foreach(ExperimentObject obj in allObjects)
+        {
+            if (obj.objectId == id) return obj;
+        }
+
+        return null;
     }
 }
