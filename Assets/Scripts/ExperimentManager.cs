@@ -58,7 +58,7 @@ public class ExperimentManager : MonoBehaviour
         experimentInitialized = false;
         objectSelected = false;
 
-        helperText.text = "Start Experiment";
+        helperText.text = "Hold your gaze in one direction";
 
         tracker = new ObjectTracker();
 
@@ -116,7 +116,7 @@ public class ExperimentManager : MonoBehaviour
 
         highlighter.UpdateObjects(allObjects);
 
-        helperText.text = "Look at the Object.";
+        helperText.text = "Look at a target or a control button";
 
         if (!experimentInitialized && allObjects.Count > 0)
         {
@@ -137,7 +137,7 @@ public class ExperimentManager : MonoBehaviour
         selectedObject = GetObjectById(selectedId);
         if (selectedObject == null) return;
 
-        helperText.text = "Object Selected: " + selectedObject.label;
+        helperText.text = "Target selected: " + selectedObject.label;
 
         if(selectedId == 1)
         {
@@ -168,7 +168,7 @@ public class ExperimentManager : MonoBehaviour
         selectedObject = GetObjectById(objectId);
         if (selectedObject == null) return;
 
-        helperText.text = "Object Selected: " + selectedObject.label;
+        helperText.text = "Target selected: " + selectedObject.label;
 
         if (navRoutine != null)
             StopCoroutine(navRoutine);
@@ -204,7 +204,7 @@ public class ExperimentManager : MonoBehaviour
 
         float yaw = CalculateSignedYaw(baseForward, targetDir);
 
-        helperText.text = "Robot Moving.";
+        helperText.text = "Robot is moving";
 
         if (Mathf.Abs(yaw) > 1f)
         {
@@ -235,7 +235,7 @@ public class ExperimentManager : MonoBehaviour
         }
 
         robot.Stop();
-        helperText.text = "Arrived at Destination.";
+        helperText.text = "Destination reached";
         gaze.StartGazeCheck();
     }
     IEnumerator MoveToLookingDirection()
@@ -245,7 +245,7 @@ public class ExperimentManager : MonoBehaviour
 
         float yaw = CalculateSignedYaw(baseForward, camForward);
 
-        helperText.text = "Robot Moving to Looking Direction.";
+        helperText.text = "Moving in the looking direction";
 
         if (Mathf.Abs(yaw) > 1f)
         {
@@ -276,7 +276,7 @@ public class ExperimentManager : MonoBehaviour
         }
 
         robot.Stop();
-        helperText.text = "Arrived at Destination.";
+        helperText.text = "Destination reached";
         gaze.StartGazeCheck();
     }
 
