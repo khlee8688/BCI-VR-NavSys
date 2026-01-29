@@ -80,8 +80,10 @@ public class ObjectHighlighter : MonoBehaviour
         RectTransform rt = box.GetComponent<RectTransform>();
         Rect canvasRect = canvasRoot.rect;
 
-        float x = obj.bbox.center.x - canvasRect.width / 2f;
-        float y = canvasRect.height / 2f - obj.bbox.center.y;
+        Debug.Log(obj.label + " " + obj.bbox.center.x+ " " + obj.bbox.center.y);
+
+        float x = obj.bbox.center.x;
+        float y = -obj.bbox.center.y;
 
         rt.anchoredPosition = new Vector2(x, y);
         rt.sizeDelta = obj.bbox.size;
@@ -123,7 +125,7 @@ public class ObjectHighlighter : MonoBehaviour
         panel.AddComponent<BoxClickHandler>();
 
         var rt = panel.GetComponent<RectTransform>();
-        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0, 0);
 
         var textGO = new GameObject("Label");
         textGO.transform.SetParent(panel.transform, false);

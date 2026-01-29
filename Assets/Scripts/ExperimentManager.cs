@@ -50,6 +50,8 @@ public class ExperimentManager : MonoBehaviour
         RobotController.OnArrived += HandleArrived;
 
         BoxClickHandler.OnBoxClicked += OnBoxClicked;
+
+        Debug.Log(canvasRoot.rect.width + "/" + canvasRoot.rect.height);
     }
 
     void OnDestroy()

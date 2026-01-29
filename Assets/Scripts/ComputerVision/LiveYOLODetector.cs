@@ -1,71 +1,42 @@
 using UnityEngine;
-using Unity.Sentis;
-using System;
+using UnityEngine.Networking;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 public class LiveYOLODetector : MonoBehaviour
 {
-    [Header("YOLO")]
-    public ModelAsset modelAsset;
-    public TextAsset classesAsset;
     public Camera mainCamera;
-
-    public event Action<List<Detection>> OnDetections;
+    public string serverUrl = "http://127.0.0.1:8000/detect";
 
     const int imageWidth = 640;
     const int imageHeight = 640;
-    const BackendType backend = BackendType.GPUCompute;
-
-    Worker worker;
-    string[] labels;
 
     RenderTexture camRT;
     Texture2D screenTex;
 
+    public event System.Action<List<Detection>> OnDetections;
+
     bool canDetect = false;
+    bool isDetecting = false;   // 중복 요청 방지
 
     void Start()
     {
-        labels = classesAsset.text
-            .Split('\n')
-            .Select(l => l.Trim())
-            .Where(l => !string.IsNullOrEmpty(l))
-            .ToArray();
-
         camRT = new RenderTexture(imageWidth, imageHeight, 24);
         screenTex = new Texture2D(imageWidth, imageHeight, TextureFormat.RGB24, false);
-
-        LoadModel();
-    }
-
-    void LoadModel()
-    {
-        var model = ModelLoader.Load(modelAsset);
-
-        var graph = new FunctionalGraph();
-        var inputs = graph.AddInputs(model);
-        var output = Functional.Forward(model, inputs)[0];
-
-        var boxCoords = output[0, 0..4, ..].Transpose(0, 1);
-        var scores = Functional.ReduceMax(output[0, 4.., ..], 0);
-        var classIds = Functional.ArgMax(output[0, 4.., ..], 0);
-
-        var indices = Functional.NMS(boxCoords, scores, 0.5f, 0.5f);
-        var finalBoxes = Functional.IndexSelect(boxCoords, 0, indices);
-        var finalIds = Functional.IndexSelect(classIds, 0, indices);
-
-        worker = new Worker(graph.Compile(finalBoxes, finalIds), backend);
     }
 
     void Update()
     {
         if (!canDetect) return;
-        CaptureAndDetect();
+        if (isDetecting) return;
+
+        StartCoroutine(CaptureAndSend());
     }
 
-    void CaptureAndDetect()
+    IEnumerator CaptureAndSend()
     {
+        isDetecting = true;
+
         var prevRT = mainCamera.targetTexture;
         mainCamera.targetTexture = camRT;
         mainCamera.Render();
@@ -77,34 +48,30 @@ public class LiveYOLODetector : MonoBehaviour
         RenderTexture.active = null;
         mainCamera.targetTexture = prevRT;
 
-        using var input = new Tensor<float>(new TensorShape(1, 3, imageHeight, imageWidth));
-        TextureConverter.ToTensor(screenTex, input, new TextureTransform());
+        byte[] jpg = screenTex.EncodeToJPG(80);
 
-        worker.Schedule(input);
+        UnityWebRequest req = new UnityWebRequest(serverUrl, "POST");
+        req.uploadHandler = new UploadHandlerRaw(jpg);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/octet-stream");
 
-        using var boxesGPU = worker.PeekOutput(0) as Tensor<float>;
-        using var idsGPU = worker.PeekOutput(1) as Tensor<int>;
+        yield return req.SendWebRequest();
 
-        using var boxes = boxesGPU.ReadbackAndClone();
-        using var ids = idsGPU.ReadbackAndClone();
-
-        var detections = new List<Detection>();
-        int count = boxes.shape[0];
-
-        for (int i = 0; i < count; i++)
+        if (req.result == UnityWebRequest.Result.Success)
         {
-            detections.Add(new Detection
-            {
-                cx = boxes[i, 0],
-                cy = boxes[i, 1],
-                w = boxes[i, 2],
-                h = boxes[i, 3],
-                label = labels[ids[i]]
-            });
+            var json = req.downloadHandler.text;
+            var result = JsonUtility.FromJson<DetectionResult>(json);
+            OnDetections?.Invoke(result.detections);
         }
-        OnDetections?.Invoke(detections);
+        else
+        {
+            Debug.LogError(req.error);
+        }
+
+        isDetecting = false;
     }
 
+    // 외부 제어용
     public void EnableDetection(bool enable)
     {
         canDetect = enable;
@@ -112,15 +79,19 @@ public class LiveYOLODetector : MonoBehaviour
 
     void OnDestroy()
     {
-        worker?.Dispose();
         if (camRT != null) camRT.Release();
     }
 }
 
-[Serializable]
+[System.Serializable]
+public class DetectionResult
+{
+    public List<Detection> detections;
+}
+
+[System.Serializable]
 public class Detection
 {
-    public float cx, cy;
-    public float w, h;
+    public float cx, cy, w, h;
     public string label;
 }
