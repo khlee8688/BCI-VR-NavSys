@@ -420,7 +420,6 @@ MonoBehaviour:
   helperText: {fileID: 354437304}
   vrCamera: {fileID: 524812066}
   player: {fileID: 1670693678}
-  moveDuration: 2
   angularSpeedDegPerSec: 10
   arrowButton: {fileID: 899724434}
 --- !u!1 &354437303
@@ -854,9 +853,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 216ded5a98e58e041a0e0d5da394fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  topicName: /cmd_vel
-  linearSpeed: 0.05
-  angularSpeed: 0.1
 --- !u!1 &899724433
 GameObject:
   m_ObjectHideFlags: 0
