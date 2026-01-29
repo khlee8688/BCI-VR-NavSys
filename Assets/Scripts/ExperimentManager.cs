@@ -21,9 +21,6 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] Camera vrCamera;
     [SerializeField] GameObject player;
 
-    [Header("Robot Timing")]
-    [SerializeField] float moveDuration = 5.0f;
-
     [Header("Robot Motion Params")]
     [SerializeField] float angularSpeedDegPerSec = 12f;
 
@@ -33,6 +30,7 @@ public class ExperimentManager : MonoBehaviour
     bool experimentRunning = false;
     bool experimentInitialized = false;
     bool objectSelected = false;
+    bool isMoving = false;
 
     ExperimentObject selectedObject;
     ExperimentObject arrowButtonObject;
@@ -49,7 +47,14 @@ public class ExperimentManager : MonoBehaviour
         detector.OnDetections += OnDetections;
         stimulus.OnStimulusEnd += OnStimulusEnd;
 
+        RobotController.OnArrived += HandleArrived;
+
         BoxClickHandler.OnBoxClicked += OnBoxClicked;
+    }
+
+    void OnDestroy()
+    {
+        RobotController.OnArrived -= HandleArrived;
     }
 
     void StartExperiment()
@@ -141,6 +146,7 @@ public class ExperimentManager : MonoBehaviour
 
         if(selectedId == 1)
         {
+            robot.PublishReset();
             navRoutine = StartCoroutine(MoveToLookingDirection());
         }
         else if(selectedId == 2)
@@ -149,6 +155,7 @@ public class ExperimentManager : MonoBehaviour
         }
         else
         {
+            robot.PublishReset();
             navRoutine = StartCoroutine(RotateThenMoveCoroutine());
         }
     }
@@ -175,6 +182,7 @@ public class ExperimentManager : MonoBehaviour
 
         if (objectId == 1)
         {
+            robot.PublishReset();
             navRoutine = StartCoroutine(MoveToLookingDirection());
         }
         else if (objectId == 2)
@@ -183,21 +191,21 @@ public class ExperimentManager : MonoBehaviour
         }
         else
         {
+            robot.PublishReset();
             navRoutine = StartCoroutine(RotateThenMoveCoroutine());
         }
     }
-
     IEnumerator RotateThenMoveCoroutine()
     {
+        isMoving = true;
+
         GameObject box = highlighter.GetBoxFromObjectID(selectedObject.objectId);
         RectTransform rt = box.GetComponent<RectTransform>();
 
         Vector3 worldPos = rt.position;
         Vector3 camPos = vrCamera.transform.position;
 
-        Ray ray = new Ray(camPos, (worldPos-camPos).normalized);
-
-        Debug.DrawRay(ray.origin, ray.direction * 150f, Color.red, 20f);
+        Ray ray = new Ray(camPos, (worldPos - camPos).normalized);
 
         Vector3 baseForward = player.transform.forward;
         Vector3 targetDir = ray.direction;
@@ -222,24 +230,22 @@ public class ExperimentManager : MonoBehaviour
                 t += Time.deltaTime;
                 yield return null;
             }
-
-            robot.Stop();
+                robot.Stop();
         }
 
-        float mt = 0f;
-        while (mt < moveDuration)
+        while (isMoving)
         {
             robot.MoveForward();
-            mt += Time.deltaTime;
             yield return null;
         }
 
         robot.Stop();
-        helperText.text = "Destination reached";
-        gaze.StartGazeCheck();
     }
+
     IEnumerator MoveToLookingDirection()
     {
+        isMoving = true;
+
         Vector3 baseForward = player.transform.forward;
         Vector3 camForward = vrCamera.transform.forward;
 
@@ -267,18 +273,15 @@ public class ExperimentManager : MonoBehaviour
             robot.Stop();
         }
 
-        float mt = 0f;
-        while (mt < moveDuration)
+        while (isMoving)
         {
             robot.MoveForward();
-            mt += Time.deltaTime;
             yield return null;
         }
 
         robot.Stop();
-        helperText.text = "Destination reached";
-        gaze.StartGazeCheck();
     }
+
 
     float CalculateSignedYaw(Vector3 baseForward, Vector3 targetDir)
     {
@@ -299,5 +302,23 @@ public class ExperimentManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    void HandleArrived()
+    {
+        if(isMoving) EmergencyStop();
+    }
+
+    void EmergencyStop()
+    {
+        if (navRoutine != null)
+        {
+            StopCoroutine(navRoutine);
+            navRoutine = null;
+        }
+
+        isMoving = false;
+        robot.Stop();
+        AbortExperiment();
     }
 }
