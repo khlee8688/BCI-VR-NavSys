@@ -315,9 +315,9 @@ GameObject:
   - component: {fileID: 352968185}
   - component: {fileID: 352968184}
   - component: {fileID: 352968183}
-  - component: {fileID: 352968182}
   - component: {fileID: 352968186}
   - component: {fileID: 352968187}
+  - component: {fileID: 352968188}
   m_Layer: 0
   m_Name: ExperimentManager
   m_TagString: Untagged
@@ -325,19 +325,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &352968182
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 352968181}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9cf724b96587bfb49b581e9b2e236183, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  theSender: {fileID: 352968183}
 --- !u!114 &352968183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,7 +353,7 @@ MonoBehaviour:
   highlighter: {fileID: 806659411}
   totalTrials: 10
   startDelay: 0
-  interval: 1
+  interval: 0.3
   timeBetweenArrows: 0.1
 --- !u!4 &352968185
 Transform:
@@ -415,6 +402,7 @@ MonoBehaviour:
   detector: {fileID: 806659412}
   stimulus: {fileID: 352968184}
   highlighter: {fileID: 806659411}
+  ldaReceiver: {fileID: 352968188}
   robot: {fileID: 856059962}
   canvasRoot: {fileID: 387702103}
   helperText: {fileID: 354437304}
@@ -422,6 +410,20 @@ MonoBehaviour:
   player: {fileID: 1670693678}
   angularSpeedDegPerSec: 10
   arrowButton: {fileID: 899724434}
+--- !u!114 &352968188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 352968181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51706ad6000313040879a4db43a962bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  serverUrl: http://127.0.0.1:12240/result
+  buttonNum: 7
 --- !u!1 &354437303
 GameObject:
   m_ObjectHideFlags: 0
