@@ -12,7 +12,9 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] GazeStabilityDetector gaze;
     [SerializeField] LiveYOLODetector detector;
     [SerializeField] StimulusController stimulus;
+    [SerializeField] StimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
+    [SerializeField] ResultReceiver ldaReceiver;
     [SerializeField] RobotController robot;
     [SerializeField] RectTransform canvasRoot;
     [SerializeField] TMP_Text helperText;
@@ -27,6 +29,7 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] Button arrowButton;
 
     ObjectTracker tracker;
+    ObjectFilter filter;
     bool experimentRunning = false;
     bool experimentInitialized = false;
     bool objectSelected = false;
@@ -39,6 +42,9 @@ public class ExperimentManager : MonoBehaviour
 
     List<ExperimentObject> allObjects;
 
+    public byte finish = 9;
+    public byte start = 8;
+
     void Start()
     {
         gaze.OnLocked += StartExperiment;
@@ -50,11 +56,20 @@ public class ExperimentManager : MonoBehaviour
         RobotController.OnArrived += HandleArrived;
 
         BoxClickHandler.OnBoxClicked += OnBoxClicked;
+
+        Debug.Log(canvasRoot.rect.width + "/" + canvasRoot.rect.height);
+
+        sender.SendStimulation(finish); // 세션이 시작됐을 때 뇌파 측정을 시작하기 위해 처음에 종료시킴
     }
 
     void OnDestroy()
     {
+        gaze.OnLocked -= StartExperiment;
+        gaze.OnBroken -= AbortExperiment;
+        detector.OnDetections -= OnDetections;
+        stimulus.OnStimulusEnd -= OnStimulusEnd;
         RobotController.OnArrived -= HandleArrived;
+        BoxClickHandler.OnBoxClicked -= OnBoxClicked;
     }
 
     void StartExperiment()
@@ -66,6 +81,7 @@ public class ExperimentManager : MonoBehaviour
         helperText.text = "Hold your gaze in one direction";
 
         tracker = new ObjectTracker();
+        filter = new ObjectFilter();
 
         arrowButtonObject = new ExperimentObject
         {
@@ -81,12 +97,15 @@ public class ExperimentManager : MonoBehaviour
             bbox = new Rect()
         };
 
+        sender.SendStimulation(start);
         detector.EnableDetection(true);
     }
 
     void AbortExperiment()
     {
         if (!experimentRunning) return;
+
+        sender.SendStimulation(finish);
 
         experimentRunning = false;
         experimentInitialized = false;
@@ -113,6 +132,7 @@ public class ExperimentManager : MonoBehaviour
         if (objectSelected) return;
 
         var trackedObjects = tracker.Update(detections);
+        trackedObjects = filter.Filter(trackedObjects);
 
         allObjects = new List<ExperimentObject>();
         allObjects.Add(arrowButtonObject);
@@ -134,22 +154,76 @@ public class ExperimentManager : MonoBehaviour
     {
         if (!experimentRunning) return;
 
+        sender.SendStimulation(finish);
+
         detector.EnableDetection(false);
         stimulus.ResetExperiment();
         gaze.StopGazeCheck();
 
-        int selectedId = 1; // TO-DO: Online LDA 결과
-        selectedObject = GetObjectById(selectedId);
-        if (selectedObject == null) return;
+        // LDA 결과 요청 시작
+        helperText.text = "Processing brain signal...";
+        StartCoroutine(WaitForLDAResult());
+    }
 
+    IEnumerator WaitForLDAResult()
+    {
+        int selectedId = -1;
+        string errorMessage = "";
+
+        // allObjects.Count를 buttonNum으로 전달
+        int buttonNum = allObjects.Count;
+        Debug.Log($"[LDA] Total buttons/objects: {buttonNum}");
+
+        // LDA 결과 요청
+        yield return StartCoroutine(ldaReceiver.GetResult(
+            buttonNum,
+            (result) =>
+            {
+                selectedId = result;
+            },
+            (error) =>
+            {
+                errorMessage = error;
+            }
+        ));
+
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            helperText.text = "Error: " + errorMessage;
+            Debug.LogError($"[LDA] Failed: {errorMessage}");
+            AbortExperiment();
+            yield break;
+        }
+
+        if (selectedId < 1 || selectedId > buttonNum)
+        {
+            helperText.text = $"Error: Invalid result {selectedId} (expected 1-{buttonNum})";
+            Debug.LogError($"[LDA] Invalid result: {selectedId}");
+            AbortExperiment();
+            yield break;
+        }
+
+        selectedObject = GetObjectById(selectedId);
+        if (selectedObject == null)
+        {
+            helperText.text = $"Error: Object not found for ID {selectedId}";
+            Debug.LogError($"[LDA] Object not found: {selectedId}");
+            AbortExperiment();
+            yield break;
+        }
+
+        objectSelected = true;
         helperText.text = "Target selected: " + selectedObject.label;
 
-        if(selectedId == 1)
+        if (navRoutine != null)
+            StopCoroutine(navRoutine);
+
+        if (selectedId == 1)
         {
             robot.PublishReset();
             navRoutine = StartCoroutine(MoveToLookingDirection());
         }
-        else if(selectedId == 2)
+        else if (selectedId == 2)
         {
             Application.Quit();
         }
@@ -195,11 +269,19 @@ public class ExperimentManager : MonoBehaviour
             navRoutine = StartCoroutine(RotateThenMoveCoroutine());
         }
     }
+
     IEnumerator RotateThenMoveCoroutine()
     {
         isMoving = true;
 
         GameObject box = highlighter.GetBoxFromObjectID(selectedObject.objectId);
+        if (box == null)
+        {
+            Debug.LogError("Box GameObject not found!");
+            isMoving = false;
+            yield break;
+        }
+
         RectTransform rt = box.GetComponent<RectTransform>();
 
         Vector3 worldPos = rt.position;
@@ -230,7 +312,7 @@ public class ExperimentManager : MonoBehaviour
                 t += Time.deltaTime;
                 yield return null;
             }
-                robot.Stop();
+            robot.Stop();
         }
 
         while (isMoving)
@@ -282,7 +364,6 @@ public class ExperimentManager : MonoBehaviour
         robot.Stop();
     }
 
-
     float CalculateSignedYaw(Vector3 baseForward, Vector3 targetDir)
     {
         baseForward.y = 0f;
@@ -296,7 +377,7 @@ public class ExperimentManager : MonoBehaviour
 
     ExperimentObject GetObjectById(int id)
     {
-        foreach(ExperimentObject obj in allObjects)
+        foreach (ExperimentObject obj in allObjects)
         {
             if (obj.objectId == id) return obj;
         }
@@ -306,7 +387,7 @@ public class ExperimentManager : MonoBehaviour
 
     void HandleArrived()
     {
-        if(isMoving) EmergencyStop();
+        if (isMoving) EmergencyStop();
     }
 
     void EmergencyStop()
