@@ -318,6 +318,7 @@ GameObject:
   - component: {fileID: 352968182}
   - component: {fileID: 352968186}
   - component: {fileID: 352968187}
+  - component: {fileID: 352968188}
   m_Layer: 0
   m_Name: ExperimentManager
   m_TagString: Untagged
@@ -366,7 +367,7 @@ MonoBehaviour:
   highlighter: {fileID: 806659411}
   totalTrials: 10
   startDelay: 0
-  interval: 0.1
+  interval: 1
   timeBetweenArrows: 0.1
 --- !u!4 &352968185
 Transform:
@@ -414,7 +415,9 @@ MonoBehaviour:
   gaze: {fileID: 352968186}
   detector: {fileID: 806659412}
   stimulus: {fileID: 352968184}
+  sender: {fileID: 352968183}
   highlighter: {fileID: 806659411}
+  ldaReceiver: {fileID: 352968188}
   robot: {fileID: 856059962}
   canvasRoot: {fileID: 387702103}
   helperText: {fileID: 354437304}
@@ -422,6 +425,21 @@ MonoBehaviour:
   player: {fileID: 1670693678}
   angularSpeedDegPerSec: 10
   arrowButton: {fileID: 899724434}
+  finish: 9
+  start: 8
+--- !u!114 &352968188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 352968181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51706ad6000313040879a4db43a962bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  serverUrl: http://127.0.0.1:12240/result
 --- !u!1 &354437303
 GameObject:
   m_ObjectHideFlags: 0
@@ -800,10 +818,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasRoot: {fileID: 387702103}
-  borderSprite: {fileID: 21300000, guid: 4fa20c8f2eb84cf448c4b703251cc935, type: 3}
+  fillSprite: {fileID: 21300000, guid: 2acd3567809235443a27aa120cc03f36, type: 3}
+  outlineSprite: {fileID: 21300000, guid: 419b0b6d1ac557049b63cec03a8ef1ae, type: 3}
   font: {fileID: 12800000, guid: 997a43b767814dd0a7642ec9b78cba41, type: 3}
-  normalColor: {r: 0, g: 0, b: 0, a: 0}
-  highlightColor: {r: 1, g: 0, b: 0, a: 0.49803922}
+  normalFillColor: {r: 1, g: 1, b: 1, a: 0}
+  highlightFillColor: {r: 1, g: 0, b: 0, a: 0.7176471}
+  normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  highlightOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   uiHighlighter: {fileID: 806659413}
 --- !u!114 &806659412
 MonoBehaviour:
@@ -817,9 +838,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 624487a7c17b58a4394251bc508d9ad4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelAsset: {fileID: 5022602860645237092, guid: 458435f5cf8211245acf24285575f5df, type: 3}
-  classesAsset: {fileID: 4900000, guid: 55cb846531fe6c345b0e01e0d9c495d7, type: 3}
   mainCamera: {fileID: 524812066}
+  serverUrl: http://127.0.0.1:8000/detect
 --- !u!114 &806659413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -834,8 +854,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   arrowButton: {fileID: 899724434}
   exitButton: {fileID: 308618285}
+  targetCanvas: {fileID: 387702102}
   normalColor: {r: 0, g: 0, b: 0, a: 0}
   highlightColor: {r: 1, g: 0, b: 0, a: 0.49019608}
+  UIOnlyMode: 0
 --- !u!1 &856059961 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1905884453840539261, guid: e616451be21ee6e48852ed69f4280e8a, type: 3}
@@ -853,6 +875,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 216ded5a98e58e041a0e0d5da394fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  controlTopicName: /cmd_vel
+  depthTopicName: /safety_reset
+  depthStateTopicName: /safety_state
 --- !u!1 &899724433
 GameObject:
   m_ObjectHideFlags: 0
@@ -1046,6 +1071,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 940701986}
   m_CullTransparentMesh: 1
+--- !u!1 &1196477504
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1196477505}
+  m_Layer: 0
+  m_Name: transparent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1196477505
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1196477504}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1303026179
 GameObject:
   m_ObjectHideFlags: 0
@@ -1713,3 +1769,4 @@ SceneRoots:
   - {fileID: 352968185}
   - {fileID: 55329158}
   - {fileID: 1670693679}
+  - {fileID: 1196477505}

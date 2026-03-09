@@ -1,80 +1,162 @@
+using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class TrainingManager : MonoBehaviour
 {
-    [SerializeField] ObjectHighlighter highlighter;
+    [Header("Core")]
     [SerializeField] StimulusController stimulus;
-    [SerializeField] private RectTransform canvasRoot;
+    [SerializeField] StimulusSender sender;
+    [SerializeField] ObjectHighlighter highlighter;
+    [SerializeField] RectTransform canvasRoot;
+    [SerializeField] TMP_Text helperText;
 
-    List<ExperimentObject> trainingObjects = new();
+    [Header("Player")]
+    [SerializeField] Camera vrCamera;
+    [SerializeField] GameObject player;
 
-    bool running = false;
+    [Header("Timing")]
+    [SerializeField] float sessionInterval = 10f; // 세션 간 간격
 
-    float current_time = 0;
-    public float blink_start_time = 5.0f;
+    bool experimentRunning = false;
 
-    void Update()
+    // === Objects ===
+    List<ExperimentObject> sessionObjects;   // Arrow, Exit 포함 총 7개
+    ExperimentObject currentObject;
+    int currentObjectIndex = 0;
+
+    const int TRAINING_OBJECT_NUM = 5; // 동적 생성 5개
+
+    public byte finish = 9;
+    public byte start = 8;
+
+    Coroutine sessionCoroutine;
+
+    void Start()
     {
-        if (running) return;
+        stimulus.OnStimulusEnd += OnStimulusEnd;
 
-        current_time += Time.deltaTime;
-        if(current_time >= blink_start_time) StartTraining();
+        sessionObjects = new List<ExperimentObject>();
+
+        sessionObjects.Add(new ExperimentObject
+        {
+            objectId = 1,
+            label = "Arrow_Button",
+            bbox = new Rect()
+        });
+
+        sessionObjects.Add(new ExperimentObject
+        {
+            objectId = 2,
+            label = "Exit_Button",
+            bbox = new Rect()
+        });
+
+        for (int i = 0; i < TRAINING_OBJECT_NUM; i++)
+        {
+            sessionObjects.Add(new ExperimentObject
+            {
+                objectId = i + 3,
+                label = $"Object_{i + 3}",
+                bbox = new Rect()
+            });
+        }
+
+        // 초기 상태: 측정 차단
+        sender.SendStimulation(finish);
+
+        StartExperiment();
     }
 
-    public void StartTraining()
+    void OnDestroy()
     {
-        if (running) return;
-        running = true;
-
-        CreateTrainingObjects();
-
-        highlighter.UpdateObjects(trainingObjects);
-
-        stimulus.StartExperiment(trainingObjects);
-
-        Debug.Log("Training START");
+        stimulus.OnStimulusEnd -= OnStimulusEnd;
     }
 
-    public void StopTraining()
+    public void StartExperiment()
     {
-        if (!running) return;
-        running = false;
+        if (experimentRunning) return;
+
+        experimentRunning = true;
+        currentObjectIndex = 0;
+
+        helperText.text = "Hold your gaze";
+
+        sessionCoroutine = StartCoroutine(SessionLoop());
+    }
+
+    IEnumerator SessionLoop()
+    {
+        while (experimentRunning && currentObjectIndex < sessionObjects.Count)
+        {
+            if (currentObjectIndex < sessionObjects.Count)
+            {
+                helperText.text = "Relax";
+                yield return new WaitForSeconds(sessionInterval);
+            }
+
+            yield return StartCoroutine(RunSingleSession());
+
+            currentObjectIndex++;
+
+            // highlighter.ClearAll();
+        }
+
+        FinishExperiment();
+    }
+
+    IEnumerator RunSingleSession()
+    {
+        sender.SendStimulation(start);
+
+        currentObject = sessionObjects[currentObjectIndex];
+
+        highlighter.UpdateObjects(sessionObjects); // 항상 7개 전부 표시
+
+        stimulus.ResetExperiment();
+        stimulus.StartExperiment(sessionObjects, currentObject.objectId);
+
+        helperText.text = $"Focus on {currentObject.label}";
+
+        // OnStimulusEnd에서 끝날 때까지 대기
+        while (stimulus.IsRunning)
+            yield return null;
+
+        sender.SendStimulation(finish);
+    }
+
+    void OnStimulusEnd()
+    {
+        // 실제 세션 종료 처리는 코루틴에서 담당
+    }
+
+    void FinishExperiment()
+    {
+        experimentRunning = false;
+
+        sender.SendStimulation(finish);
 
         stimulus.ResetExperiment();
         highlighter.ClearAll();
 
-        Debug.Log("Training STOP");
+        helperText.text = "Training Finished";
     }
 
-    void CreateTrainingObjects()
+    public void AbortExperiment()
     {
-        trainingObjects.Clear();
+        if (!experimentRunning) return;
 
-        float size = 150f;
-        float offset = 150f;
-        float canvasH = canvasRoot.rect.height/2;
-        float canvasW = canvasRoot.rect.width/2;
+        experimentRunning = false;
 
-        trainingObjects.Add(MakeObj(0, "N", new Vector2(canvasW + offset, canvasH + offset), size));
-        trainingObjects.Add(MakeObj(1, "N", new Vector2(canvasW + offset, canvasH - offset), size));
-        trainingObjects.Add(MakeObj(2, "N", new Vector2(canvasW - offset, canvasH + offset), size));
-        trainingObjects.Add(MakeObj(3, "N", new Vector2(canvasW - offset, canvasH - offset), size));
-    }
+        if (sessionCoroutine != null)
+            StopCoroutine(sessionCoroutine);
 
-    ExperimentObject MakeObj(int id, string label, Vector2 center, float size)
-    {
-        return new ExperimentObject
-        {
-            objectId = id,
-            trackId = -1,
-            label = label,
-            bbox = new Rect(
-                center.x - size * 0.5f,
-                center.y - size * 0.5f,
-                size,
-                size
-            )
-        };
+        sender.SendStimulation(finish);
+
+        stimulus.ResetExperiment();
+        highlighter.ClearAll();
+
+        helperText.text = "Experiment Aborted";
     }
 }

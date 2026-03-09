@@ -5,13 +5,15 @@ using System.Linq;
 public class ObjectFilter
 {
     public int maxCount = 5;
+
     List<int> filterObjectIdList = new List<int>();
     bool locked = false;
 
     public List<ExperimentObject> Filter(List<ExperimentObject> objects)
     {
-        var list = objects;
-        if(!locked)
+        var list = objects.ToList();
+
+        if (!locked)
         {
             if (list.Count > maxCount)
             {
@@ -19,20 +21,18 @@ public class ObjectFilter
                 list = SortByScreenRule(list);
                 list = TrimToMax(list);
             }
-            
+
+            filterObjectIdList.Clear();
             foreach (var o in list)
-            {
                 filterObjectIdList.Add(o.objectId);
-            }
 
             locked = true;
         }
         else
         {
-            foreach (var o in list)
-            {
-                if(!filterObjectIdList.Contains(o.objectId)) list.Remove(o);
-            }
+            list = list
+                .Where(o => filterObjectIdList.Contains(o.objectId))
+                .ToList();
         }
 
         return list;
@@ -54,15 +54,16 @@ public class ObjectFilter
 
     List<ExperimentObject> SortByScreenRule(List<ExperimentObject> list)
     {
-        return list.OrderBy(o => o.bbox.center.sqrMagnitude).ToList();
+        return list
+            .OrderBy(o => o.bbox.center.sqrMagnitude)
+            .ToList();
     }
 
     List<ExperimentObject> TrimToMax(List<ExperimentObject> list)
     {
-        if (list.Count <= maxCount)
-            return list;
-
-        return list.Take(maxCount).ToList();
+        return list.Count <= maxCount
+            ? list
+            : list.Take(maxCount).ToList();
     }
 
     float IoU(Rect a, Rect b)
@@ -71,8 +72,16 @@ public class ObjectFilter
         float y1 = Mathf.Max(a.yMin, b.yMin);
         float x2 = Mathf.Min(a.xMax, b.xMax);
         float y2 = Mathf.Min(a.yMax, b.yMax);
+
         float inter = Mathf.Max(0, x2 - x1) * Mathf.Max(0, y2 - y1);
         float uni = a.width * a.height + b.width * b.height - inter;
+
         return uni > 0 ? inter / uni : 0;
+    }
+
+    public void Reset()
+    {
+        locked = false;
+        filterObjectIdList.Clear();
     }
 }

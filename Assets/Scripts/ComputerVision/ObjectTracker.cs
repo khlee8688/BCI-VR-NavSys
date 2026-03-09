@@ -4,7 +4,7 @@ using System.Linq;
 
 public class ObjectTracker
 {
-    int nextObjectId = 3;
+    int nextObjectId = 10;
     List<ExperimentObject> objects = new();
 
     public List<ExperimentObject> Update(List<Detection> detections)

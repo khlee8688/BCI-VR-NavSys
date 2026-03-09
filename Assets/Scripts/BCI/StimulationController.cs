@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class StimulusController : MonoBehaviour
@@ -29,8 +30,11 @@ public class StimulusController : MonoBehaviour
     State state = State.Idle;
     float timer = 0f;
     int currentId = -1;
+    int targetID = -1;
 
-    public void StartExperiment(List<ExperimentObject> objs)
+    public bool IsRunning { get; private set; } = false;
+
+    public void StartExperiment(List<ExperimentObject> objs, int tID = -1)
     {
         queue.Clear();
 
@@ -54,8 +58,10 @@ public class StimulusController : MonoBehaviour
                 queue.Enqueue(objs[indices[i]].objectId);
         }
 
+        targetID = tID;
         timer = startDelay;
         state = State.StartDelay;
+        IsRunning = true;
     }
 
     void Update()
@@ -89,6 +95,8 @@ public class StimulusController : MonoBehaviour
         {
             state = State.Idle;
             currentId = -1;
+            IsRunning = false;
+
             highlighter?.ClearHighlight();
             OnStimulusEnd?.Invoke();
             return;
@@ -97,8 +105,11 @@ public class StimulusController : MonoBehaviour
         currentId = queue.Dequeue();
 
         OnStimulus?.Invoke(currentId);
-        sender?.SendStimulation((byte)currentId);
+        if (targetID == -1) sender?.SendStimulation((byte)currentId);
+        else if (currentId == targetID) sender?.SendStimulation((byte)1);
+        else sender?.SendStimulation((byte)0);
         highlighter?.Highlight(currentId);
+
         timer = interval;
         state = State.StimulusOn;
     }
@@ -109,6 +120,8 @@ public class StimulusController : MonoBehaviour
         timer = 0f;
         state = State.Idle;
         currentId = -1;
+        IsRunning = false;
+
         highlighter?.ClearHighlight();
     }
 }

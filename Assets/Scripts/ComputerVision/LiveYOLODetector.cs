@@ -37,6 +37,12 @@ public class LiveYOLODetector : MonoBehaviour
     {
         isDetecting = true;
 
+        int originalMask = mainCamera.cullingMask;
+
+        // UI 레이어 제외
+        int uiLayer = LayerMask.NameToLayer("UI");
+        mainCamera.cullingMask &= ~(1 << uiLayer);
+
         var prevRT = mainCamera.targetTexture;
         mainCamera.targetTexture = camRT;
         mainCamera.Render();
@@ -47,6 +53,9 @@ public class LiveYOLODetector : MonoBehaviour
 
         RenderTexture.active = null;
         mainCamera.targetTexture = prevRT;
+
+        // 마스크 복구
+        mainCamera.cullingMask = originalMask;
 
         byte[] jpg = screenTex.EncodeToJPG(80);
 

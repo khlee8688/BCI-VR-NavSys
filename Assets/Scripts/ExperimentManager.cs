@@ -12,6 +12,7 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] GazeStabilityDetector gaze;
     [SerializeField] LiveYOLODetector detector;
     [SerializeField] StimulusController stimulus;
+    [SerializeField] StimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
     [SerializeField] ResultReceiver ldaReceiver;
     [SerializeField] RobotController robot;
@@ -41,6 +42,9 @@ public class ExperimentManager : MonoBehaviour
 
     List<ExperimentObject> allObjects;
 
+    public byte finish = 9;
+    public byte start = 8;
+
     void Start()
     {
         gaze.OnLocked += StartExperiment;
@@ -54,6 +58,8 @@ public class ExperimentManager : MonoBehaviour
         BoxClickHandler.OnBoxClicked += OnBoxClicked;
 
         Debug.Log(canvasRoot.rect.width + "/" + canvasRoot.rect.height);
+
+        sender.SendStimulation(finish); // 세션이 시작됐을 때 뇌파 측정을 시작하기 위해 처음에 종료시킴
     }
 
     void OnDestroy()
@@ -91,12 +97,15 @@ public class ExperimentManager : MonoBehaviour
             bbox = new Rect()
         };
 
+        sender.SendStimulation(start);
         detector.EnableDetection(true);
     }
 
     void AbortExperiment()
     {
         if (!experimentRunning) return;
+
+        sender.SendStimulation(finish);
 
         experimentRunning = false;
         experimentInitialized = false;
@@ -144,6 +153,8 @@ public class ExperimentManager : MonoBehaviour
     void OnStimulusEnd()
     {
         if (!experimentRunning) return;
+
+        sender.SendStimulation(finish);
 
         detector.EnableDetection(false);
         stimulus.ResetExperiment();

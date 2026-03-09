@@ -1,28 +1,41 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-using Meta.WitAi;
-using UnityEngine.EventSystems;
+
 public class ObjectHighlighter : MonoBehaviour
 {
     [Header("UI")]
     public RectTransform canvasRoot;
-    [SerializeField] private Sprite borderSprite;
+    [SerializeField] private Sprite fillSprite;
+    [SerializeField] private Sprite outlineSprite;
     [SerializeField] private Font font;
 
     [Header("Style")]
-    [SerializeField] private Color normalColor = Color.clear;
-    [SerializeField] private Color highlightColor = Color.red;
+    [SerializeField] private Color normalFillColor = new Color(1, 1, 1, 0);
+    [SerializeField] private Color highlightFillColor = new Color(1, 0, 0, 0.2f);
+    [SerializeField] private Color normalOutlineColor = Color.white;
+    [SerializeField] private Color highlightOutlineColor = Color.red;
 
-    [SerializeField] UIHighlighter uiHighlighter;
+    [SerializeField] private UIHighlighter uiHighlighter;
 
-    private Dictionary<int, GameObject> boxMap = new Dictionary<int, GameObject>();
+    class BoxUI
+    {
+        public GameObject root;
+        public RectTransform rect;
+        public Image fillImage;
+        public Image outlineImage;
+        public Text label;
+        public BoxClickHandler clickHandler;
+    }
+
+    private Dictionary<int, BoxUI> boxMap = new();
+
+    // ======================================================
 
     public void UpdateObjects(List<ExperimentObject> objects)
     {
-        // ÀüºÎ ¼û±è
         foreach (var kv in boxMap)
-            kv.Value.SetActive(false);
+            kv.Value.root.SetActive(false);
 
         foreach (var obj in objects)
         {
@@ -33,102 +46,123 @@ public class ObjectHighlighter : MonoBehaviour
             }
 
             UpdateBoxTransform(box, obj);
-            SetBoxColor(box, normalColor, false);
-            box.SetActive(true);
+            SetBoxColor(box, normalFillColor, false);
+            box.root.SetActive(true);
         }
     }
 
     public void Highlight(int objectId)
     {
-        // UI ¹öÆ°
-        if (objectId <= 2)
+        if (uiHighlighter != null &&
+            (uiHighlighter.UIOnlyMode || objectId <= 2))
         {
             ClearHighlight();
             uiHighlighter.UIHighlight(objectId);
             return;
         }
 
-        // YOLO °´Ã¼
         foreach (var kv in boxMap)
         {
             bool active = kv.Key == objectId;
-            SetBoxColor(kv.Value, active ? highlightColor : normalColor, active);
+            SetBoxColor(
+                kv.Value,
+                active ? highlightFillColor : normalFillColor,
+                active
+            );
         }
     }
 
     public void ClearHighlight()
     {
         foreach (var kv in boxMap)
-            SetBoxColor(kv.Value, normalColor, false);
+            SetBoxColor(kv.Value, normalFillColor, false);
 
-        uiHighlighter.Clear();
+        if (uiHighlighter != null)
+            uiHighlighter.Clear();
     }
 
     public void ClearAll()
     {
         foreach (var kv in boxMap)
-            kv.Value.SetActive(false);
+            kv.Value.root.SetActive(false);
     }
 
-    public GameObject GetBoxFromObjectID(int objectId)
+    // ======================================================
+
+    private void UpdateBoxTransform(BoxUI box, ExperimentObject obj)
     {
-        return boxMap[objectId];
+        box.rect.anchoredPosition = new Vector2(
+            obj.bbox.center.x,
+            -obj.bbox.center.y
+        );
+
+        box.rect.sizeDelta = obj.bbox.size;
+
+        box.clickHandler.objectId = obj.objectId;
+        box.label.text = $"{obj.label} ({obj.objectId})";
     }
 
-    void UpdateBoxTransform(GameObject box, ExperimentObject obj)
+    private void SetBoxColor(BoxUI box, Color fillColor, bool highlight)
     {
-        RectTransform rt = box.GetComponent<RectTransform>();
-        Rect canvasRect = canvasRoot.rect;
+        if (!box.root.activeSelf) return;
 
-        float x = obj.bbox.center.x;
-        float y = -obj.bbox.center.y;
+        box.fillImage.color = fillColor;
 
-        rt.anchoredPosition = new Vector2(x, y);
-        rt.sizeDelta = obj.bbox.size;
+        box.outlineImage.color = highlight
+            ? highlightOutlineColor
+            : normalOutlineColor;
 
-        box.GetComponent<BoxClickHandler>().objectId = obj.objectId;
-
-        Text label = box.GetComponentInChildren<Text>();
-        label.text = $"{obj.label} ({obj.objectId})";
+        box.label.enabled = highlight;
+        box.label.color = highlightOutlineColor;
     }
 
-    void SetBoxColor(GameObject box, Color color, bool showLabel)
-    {
-        if (!box.activeSelf) return;
-
-        var img = box.GetComponent<Image>();
-        var txt = box.GetComponentInChildren<Text>();
-
-        if (img != null) img.color = color;
-        if (txt != null)
-        {
-            txt.enabled = showLabel;
-            txt.color = highlightColor;
-        }
-    }
-
-    GameObject CreateBox()
+    private BoxUI CreateBox()
     {
         var panel = new GameObject("ObjectBox");
         panel.transform.SetParent(canvasRoot, false);
 
-        panel.AddComponent<CanvasRenderer>();
+        var rect = panel.AddComponent<RectTransform>();
+        rect.pivot = new Vector2(0.5f, 0.5f);
 
-        var img = panel.AddComponent<Image>();
-        img.sprite = borderSprite;
-        img.type = Image.Type.Sliced;
-        img.color = normalColor;
-        img.raycastTarget = true;
+        // ================= Fill =================
+        var fillGO = new GameObject("Fill");
+        fillGO.transform.SetParent(panel.transform, false);
 
-        panel.AddComponent<BoxClickHandler>();
+        var fillRect = fillGO.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
 
-        var rt = panel.GetComponent<RectTransform>();
-        rt.pivot = new Vector2(0.5f, 0.5f);
+        var fillImg = fillGO.AddComponent<Image>();
+        fillImg.sprite = fillSprite;
+        fillImg.type = Image.Type.Sliced;
+        fillImg.color = normalFillColor;
+        fillImg.raycastTarget = false;
 
+        // ================= Outline =================
+        var outlineGO = new GameObject("Outline");
+        outlineGO.transform.SetParent(panel.transform, false);
+
+        var outlineRect = outlineGO.AddComponent<RectTransform>();
+        outlineRect.anchorMin = Vector2.zero;
+        outlineRect.anchorMax = Vector2.one;
+        outlineRect.offsetMin = Vector2.zero;
+        outlineRect.offsetMax = Vector2.zero;
+
+        var outlineImg = outlineGO.AddComponent<Image>();
+        outlineImg.sprite = outlineSprite;
+        outlineImg.type = Image.Type.Sliced;
+        outlineImg.color = normalOutlineColor;
+        outlineImg.raycastTarget = true;
+
+        // ================= Click =================
+        var click = panel.AddComponent<BoxClickHandler>();
+
+        // ================= Label =================
         var textGO = new GameObject("Label");
         textGO.transform.SetParent(panel.transform, false);
 
-        textGO.AddComponent<CanvasRenderer>();
         var txt = textGO.AddComponent<Text>();
         txt.font = font;
         txt.alignment = TextAnchor.UpperLeft;
@@ -143,6 +177,23 @@ public class ObjectHighlighter : MonoBehaviour
         trt.anchoredPosition = new Vector2(5, -5);
         trt.sizeDelta = new Vector2(200, 40);
 
-        return panel;
+        return new BoxUI
+        {
+            root = panel,
+            rect = rect,
+            fillImage = fillImg,
+            outlineImage = outlineImg,
+            label = txt,
+            clickHandler = click
+        };
     }
+
+    public GameObject GetBoxFromObjectID(int objectId)
+    {
+        if (boxMap.TryGetValue(objectId, out var box))
+            return box.root;
+
+        return null;
+    }
+
 }
