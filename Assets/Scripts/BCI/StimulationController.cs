@@ -66,7 +66,11 @@ public class StimulusController : MonoBehaviour
 
     void Update()
     {
-        if (state == State.Idle) return;
+        if (state == State.Idle)
+        {
+            sender.SendStimulation((byte)50);
+            return;
+        }
 
         timer -= Time.deltaTime;
         if (timer > 0f) return;

@@ -21,6 +21,10 @@ public class ObjectFilter
                 list = SortByScreenRule(list);
                 list = TrimToMax(list);
             }
+            else
+            {
+                list = RemoveOverlappingLargeOnes(list);
+            }
 
             filterObjectIdList.Clear();
             foreach (var o in list)

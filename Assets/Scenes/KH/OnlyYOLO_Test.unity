@@ -367,8 +367,8 @@ MonoBehaviour:
   highlighter: {fileID: 806659411}
   totalTrials: 10
   startDelay: 0
-  interval: 1
-  timeBetweenArrows: 0.1
+  interval: 0.2
+  timeBetweenArrows: 0.2
 --- !u!4 &352968185
 Transform:
   m_ObjectHideFlags: 0
@@ -818,13 +818,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasRoot: {fileID: 387702103}
-  fillSprite: {fileID: 21300000, guid: 2acd3567809235443a27aa120cc03f36, type: 3}
+  fillSprite: {fileID: 21300000, guid: 0e6ee2eab210c974d86aff05d7a7bee1, type: 3}
   outlineSprite: {fileID: 21300000, guid: 419b0b6d1ac557049b63cec03a8ef1ae, type: 3}
   font: {fileID: 12800000, guid: 997a43b767814dd0a7642ec9b78cba41, type: 3}
-  normalFillColor: {r: 1, g: 1, b: 1, a: 0}
-  highlightFillColor: {r: 1, g: 0, b: 0, a: 0.7176471}
-  normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
-  highlightOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  normalOutlineColor: {r: 0.82745105, g: 0.5294118, b: 0.15686275, a: 1}
+  highlightOutlineColor: {r: 0.82745105, g: 0.5294118, b: 0.15686275, a: 1}
+  highlightFillColor: {r: 0.1254902, g: 0.98823535, b: 0.94117653, a: 1}
+  highlightSize: {x: 60, y: 60}
+  crossThickness: 2
+  crossLength: 20
   uiHighlighter: {fileID: 806659413}
 --- !u!114 &806659412
 MonoBehaviour:
@@ -856,7 +858,7 @@ MonoBehaviour:
   exitButton: {fileID: 308618285}
   targetCanvas: {fileID: 387702102}
   normalColor: {r: 0, g: 0, b: 0, a: 0}
-  highlightColor: {r: 1, g: 0, b: 0, a: 0.49019608}
+  highlightColor: {r: 0.1254902, g: 0.98823535, b: 0.94117653, a: 1}
   UIOnlyMode: 0
 --- !u!1 &856059961 stripped
 GameObject:
@@ -1516,7 +1518,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1991379736}
   m_LocalRotation: {x: 0, y: -0.7071068, z: 0.7071068, w: 0}
-  m_LocalPosition: {x: 0, y: 0, z: 150}
+  m_LocalPosition: {x: 0, y: 0, z: 91.9}
   m_LocalScale: {x: 16, y: 1, z: 9}
   m_ConstrainProportionsScale: 0
   m_Children: []

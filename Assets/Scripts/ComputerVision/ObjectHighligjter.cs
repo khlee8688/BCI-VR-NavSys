@@ -11,10 +11,14 @@ public class ObjectHighlighter : MonoBehaviour
     [SerializeField] private Font font;
 
     [Header("Style")]
-    [SerializeField] private Color normalFillColor = new Color(1, 1, 1, 0);
-    [SerializeField] private Color highlightFillColor = new Color(1, 0, 0, 0.2f);
     [SerializeField] private Color normalOutlineColor = Color.white;
     [SerializeField] private Color highlightOutlineColor = Color.red;
+    [SerializeField] private Color highlightFillColor = new Color(1, 0, 0, 0.2f);
+
+    [Header("Highlight")]
+    [SerializeField] private Vector2 highlightSize = new Vector2(50, 50);
+    [SerializeField] private float crossThickness = 2f;
+    [SerializeField] private float crossLength = 20f;
 
     [SerializeField] private UIHighlighter uiHighlighter;
 
@@ -22,8 +26,15 @@ public class ObjectHighlighter : MonoBehaviour
     {
         public GameObject root;
         public RectTransform rect;
-        public Image fillImage;
+
         public Image outlineImage;
+
+        public GameObject highlight;
+        public Image highlightImage;
+
+        public Image crossH;
+        public Image crossV;
+
         public Text label;
         public BoxClickHandler clickHandler;
     }
@@ -46,7 +57,7 @@ public class ObjectHighlighter : MonoBehaviour
             }
 
             UpdateBoxTransform(box, obj);
-            SetBoxColor(box, normalFillColor, false);
+            SetBoxColor(box, false);
             box.root.SetActive(true);
         }
     }
@@ -64,18 +75,14 @@ public class ObjectHighlighter : MonoBehaviour
         foreach (var kv in boxMap)
         {
             bool active = kv.Key == objectId;
-            SetBoxColor(
-                kv.Value,
-                active ? highlightFillColor : normalFillColor,
-                active
-            );
+            SetBoxColor(kv.Value, active);
         }
     }
 
     public void ClearHighlight()
     {
         foreach (var kv in boxMap)
-            SetBoxColor(kv.Value, normalFillColor, false);
+            SetBoxColor(kv.Value, false);
 
         if (uiHighlighter != null)
             uiHighlighter.Clear();
@@ -102,11 +109,11 @@ public class ObjectHighlighter : MonoBehaviour
         box.label.text = $"{obj.label} ({obj.objectId})";
     }
 
-    private void SetBoxColor(BoxUI box, Color fillColor, bool highlight)
+    private void SetBoxColor(BoxUI box, bool highlight)
     {
         if (!box.root.activeSelf) return;
 
-        box.fillImage.color = fillColor;
+        box.highlight.SetActive(highlight);
 
         box.outlineImage.color = highlight
             ? highlightOutlineColor
@@ -116,6 +123,8 @@ public class ObjectHighlighter : MonoBehaviour
         box.label.color = highlightOutlineColor;
     }
 
+    // ======================================================
+
     private BoxUI CreateBox()
     {
         var panel = new GameObject("ObjectBox");
@@ -124,23 +133,8 @@ public class ObjectHighlighter : MonoBehaviour
         var rect = panel.AddComponent<RectTransform>();
         rect.pivot = new Vector2(0.5f, 0.5f);
 
-        // ================= Fill =================
-        var fillGO = new GameObject("Fill");
-        fillGO.transform.SetParent(panel.transform, false);
-
-        var fillRect = fillGO.AddComponent<RectTransform>();
-        fillRect.anchorMin = Vector2.zero;
-        fillRect.anchorMax = Vector2.one;
-        fillRect.offsetMin = Vector2.zero;
-        fillRect.offsetMax = Vector2.zero;
-
-        var fillImg = fillGO.AddComponent<Image>();
-        fillImg.sprite = fillSprite;
-        fillImg.type = Image.Type.Sliced;
-        fillImg.color = normalFillColor;
-        fillImg.raycastTarget = false;
-
         // ================= Outline =================
+
         var outlineGO = new GameObject("Outline");
         outlineGO.transform.SetParent(panel.transform, false);
 
@@ -156,10 +150,65 @@ public class ObjectHighlighter : MonoBehaviour
         outlineImg.color = normalOutlineColor;
         outlineImg.raycastTarget = true;
 
+        // ================= Highlight =================
+
+        var highlightGO = new GameObject("Highlight");
+        highlightGO.transform.SetParent(panel.transform, false);
+
+        var highlightRect = highlightGO.AddComponent<RectTransform>();
+        highlightRect.anchorMin = new Vector2(0.5f, 0.5f);
+        highlightRect.anchorMax = new Vector2(0.5f, 0.5f);
+        highlightRect.pivot = new Vector2(0.5f, 0.5f);
+        highlightRect.anchoredPosition = Vector2.zero;
+        highlightRect.sizeDelta = highlightSize;
+
+        var highlightImg = highlightGO.AddComponent<Image>();
+        highlightImg.sprite = fillSprite;
+        highlightImg.type = Image.Type.Sliced;
+        highlightImg.color = highlightFillColor;
+        highlightImg.raycastTarget = false;
+
+        highlightGO.SetActive(false);
+
+        // ================= Cross Horizontal =================
+
+        var crossHGO = new GameObject("CrossH");
+        crossHGO.transform.SetParent(panel.transform, false);
+
+        var crossHRect = crossHGO.AddComponent<RectTransform>();
+        crossHRect.anchorMin = new Vector2(0.5f, 0.5f);
+        crossHRect.anchorMax = new Vector2(0.5f, 0.5f);
+        crossHRect.pivot = new Vector2(0.5f, 0.5f);
+        crossHRect.anchoredPosition = Vector2.zero;
+        crossHRect.sizeDelta = new Vector2(crossLength, crossThickness);
+
+        var crossHImg = crossHGO.AddComponent<Image>();
+        crossHImg.color = Color.white;
+        crossHImg.raycastTarget = false;
+
+
+        // ================= Cross Vertical =================
+
+        var crossVGO = new GameObject("CrossV");
+        crossVGO.transform.SetParent(panel.transform, false);
+
+        var crossVRect = crossVGO.AddComponent<RectTransform>();
+        crossVRect.anchorMin = new Vector2(0.5f, 0.5f);
+        crossVRect.anchorMax = new Vector2(0.5f, 0.5f);
+        crossVRect.pivot = new Vector2(0.5f, 0.5f);
+        crossVRect.anchoredPosition = Vector2.zero;
+        crossVRect.sizeDelta = new Vector2(crossThickness, crossLength);
+
+        var crossVImg = crossVGO.AddComponent<Image>();
+        crossVImg.color = Color.white;
+        crossVImg.raycastTarget = false;
+
         // ================= Click =================
+
         var click = panel.AddComponent<BoxClickHandler>();
 
         // ================= Label =================
+
         var textGO = new GameObject("Label");
         textGO.transform.SetParent(panel.transform, false);
 
@@ -181,12 +230,17 @@ public class ObjectHighlighter : MonoBehaviour
         {
             root = panel,
             rect = rect,
-            fillImage = fillImg,
             outlineImage = outlineImg,
+            highlight = highlightGO,
+            highlightImage = highlightImg,
+            crossH = crossHImg,
+            crossV = crossVImg,
             label = txt,
             clickHandler = click
         };
     }
+
+    // ======================================================
 
     public GameObject GetBoxFromObjectID(int objectId)
     {
@@ -195,5 +249,4 @@ public class ObjectHighlighter : MonoBehaviour
 
         return null;
     }
-
 }
