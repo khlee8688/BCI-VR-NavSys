@@ -814,7 +814,7 @@ MonoBehaviour:
   normalOutlineColor: {r: 1, g: 0.6531814, b: 0, a: 1}
   highlightOutlineColor: {r: 1, g: 0.654902, b: 0, a: 1}
   highlightFillColor: {r: 0, g: 1, b: 0.9705775, a: 1}
-  highlightSize: {x: 50, y: 50}
+  highlightSize: {x: 100, y: 100}
   crossThickness: 2
   crossLength: 20
   uiHighlighter: {fileID: 806659413}
