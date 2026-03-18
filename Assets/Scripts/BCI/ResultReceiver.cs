@@ -8,6 +8,7 @@ using System.Text;
 public class PredictRequest
 {
     public int button_num;
+    public int[] marker_ids;
 }
 
 [System.Serializable]
@@ -21,9 +22,9 @@ public class ResultReceiver : MonoBehaviour
     public string serverUrl = "http://127.0.0.1:12240/result";
 
     // buttonNum을 파라미터로 받도록 변경
-    public IEnumerator GetResult(int buttonNum, Action<int> onResultReceived, Action<string> onError)
+    public IEnumerator GetResult(int buttonNum, int[] markerID, Action<int> onResultReceived, Action<string> onError)
     {
-        PredictRequest requestData = new PredictRequest { button_num = buttonNum };
+        PredictRequest requestData = new PredictRequest { button_num = buttonNum, marker_ids = markerID };
         string jsonData = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
 

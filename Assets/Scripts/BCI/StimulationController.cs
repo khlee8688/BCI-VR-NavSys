@@ -8,6 +8,10 @@ public class StimulusController : MonoBehaviour
     [SerializeField] StimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
 
+    [Header("Sender")]
+    public string host;
+    public int portNo;
+
     [Header("Timing")]
     public int totalTrials = 20;
     public float startDelay = 0.0f;
@@ -64,11 +68,15 @@ public class StimulusController : MonoBehaviour
         IsRunning = true;
     }
 
+    void Start()
+    {
+        sender.open(host, portNo);
+    }
+
     void Update()
     {
         if (state == State.Idle)
         {
-            sender.SendStimulation((byte)50);
             return;
         }
 

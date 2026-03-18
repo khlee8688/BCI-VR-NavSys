@@ -30,6 +30,7 @@ public class TrainingManager : MonoBehaviour
 
     public byte finish = 9;
     public byte start = 8;
+    private byte completelyFinished = 49;
 
     Coroutine sessionCoroutine;
 
@@ -141,6 +142,8 @@ public class TrainingManager : MonoBehaviour
         highlighter.ClearAll();
 
         helperText.text = "Training Finished";
+
+        sender.SendStimulation(completelyFinished);
     }
 
     public void AbortExperiment()

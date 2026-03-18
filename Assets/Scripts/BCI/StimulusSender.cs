@@ -1,50 +1,112 @@
 using LSL;
 using LSL4Unity.Utils;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Sockets;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 public class StimulusSender : MonoBehaviour
 {
-    private string StreamName;
-    string StreamType = "Markers";
-    string StreamType2= "Stream";
-    int[] sample = new int[1];
+    private int m_iPos = 8;
+    private int m_iMax = 24;
+    byte[] m_Buf = new byte[24];
 
-    #region LSL4Unity_outlet
-    int ChannelCount = 1;
-    private StreamOutlet markerOutlet;
-    private StreamOutlet signalOutlet; // marker stream만으로는 연결이 안 됨. signal stream이 무조건 필요.
-    #endregion
+    //TCP instance
+    public TcpClient m_clientSocket = new TcpClient();
+    public NetworkStream readstream = default(NetworkStream);
+    public BinaryWriter writer;
 
-    void Start()
+    public virtual bool open(string host, int portNo)
     {
-        string streamName = StreamName + "_Stimulations";
-
-        var hash = new Hash128();
-        hash.Append("P300Stimulus");
-        hash.Append(gameObject.GetInstanceID());
-
-        StreamInfo streamInfo_stimulation = new StreamInfo(streamName, StreamType, ChannelCount, LSL.LSL.IRREGULAR_RATE, channel_format_t.cf_int32, hash.ToString());
-        markerOutlet = new StreamOutlet(streamInfo_stimulation);
-
-        StreamInfo streamInfo_stream = new StreamInfo(streamName, StreamType2, ChannelCount, LSL.LSL.IRREGULAR_RATE, channel_format_t.cf_float32, hash.ToString());
-        signalOutlet = new StreamOutlet(streamInfo_stream);
+        Int32 port = portNo;
+        m_clientSocket.Connect(host, port);
+        //m_clientSocket = new TcpClient(host, port);
+        readstream = m_clientSocket.GetStream();
+        //writer = new BinaryWriter(readstream);
+        Array.Clear(m_Buf, 0x0, 24);
+        return true;
     }
 
-    private void Update()
+    // Close connection
+    //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+    //ORIGINAL LINE: public boolean close() throws Exception
+    public virtual bool close()
     {
-        signalOutlet.push_sample(sample); // siganl stream의 sample frequency가 0이어도 실행이 안 되는 문제 해결을 위한 코드 (보낸 값은 사용 안 됨)
+        readstream.Close();
+        m_clientSocket.Close();
+        return true;
     }
 
-    public void SendStimulation(byte instanceID)
+    // Send stimulation with a timestamp. 
+    //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+    //ORIGINAL LINE: public boolean send(System.Nullable<long> stimulation, System.Nullable<long> timestamp) throws Exception
+    public void SendStimulation(byte stimulation)
     {
-        sample[0] = instanceID;
-        if (markerOutlet != null)
+        if (m_clientSocket == null || !m_clientSocket.Connected || readstream == null)
         {
-            markerOutlet.push_sample(sample);
-            // Debug.Log("Sent data: " + instanceID);
+            Debug.LogWarning("TCP not connected");
+            return;
         }
+
+        m_Buf[m_iPos] = stimulation;
+        readstream.Write(m_Buf, 0, 24);
+    }
+
+    //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+    //ORIGINAL LINE: public String receive() throws Exception
+    public virtual string receive()
+    {
+        byte[] data = new byte[256];
+
+        // String to store the response ASCII representation.
+        string responseData = string.Empty;
+
+        // Read the first batch of the TcpServer response bytes.
+        int bytes = readstream.Read(data, 0, data.Length);
+        responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
+
+        return responseData;
+    }
+
+    public void allocate(int iLimit)
+    {
+        m_iPos = 0;
+        m_iMax = iLimit;
+        m_Buf = new byte[iLimit];
+    }
+
+    public void putLong(long s)
+    {
+        if ((m_iPos + 8) > m_iMax)
+            return;
+        byte[] buf = new byte[8];
+
+        buf = BitConverter.GetBytes(s);
+
+        m_Buf[m_iPos++] = buf[0];
+        m_Buf[m_iPos++] = buf[1];
+        m_Buf[m_iPos++] = buf[2];
+        m_Buf[m_iPos++] = buf[3];
+        m_Buf[m_iPos++] = buf[4];
+        m_Buf[m_iPos++] = buf[5];
+        m_Buf[m_iPos++] = buf[6];
+        m_Buf[m_iPos++] = buf[7];
+    }
+
+    public void putLongZero()
+    {
+        if ((m_iPos + 8) > m_iMax)
+            return;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
+        m_Buf[m_iPos++] = 0;
     }
 }
