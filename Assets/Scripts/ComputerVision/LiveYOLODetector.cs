@@ -8,8 +8,8 @@ public class LiveYOLODetector : MonoBehaviour
     public Camera mainCamera;
     public string serverUrl = "http://127.0.0.1:8000/detect";
 
-    const int imageWidth = 640;
-    const int imageHeight = 640;
+    const int imageWidth = 1600;
+    const int imageHeight = 900;
 
     RenderTexture camRT;
     Texture2D screenTex;

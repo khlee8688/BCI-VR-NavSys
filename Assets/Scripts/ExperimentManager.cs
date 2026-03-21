@@ -8,6 +8,8 @@ using UnityEngine.UI;
 
 public class ExperimentManager : MonoBehaviour
 {
+    [SerializeField] bool isTest = false;
+
     [Header("Core")]
     [SerializeField] GazeStabilityDetector gaze;
     [SerializeField] LiveYOLODetector detector;
@@ -170,21 +172,20 @@ public class ExperimentManager : MonoBehaviour
         int selectedId = -1;
         string errorMessage = "";
 
-        // allObjects.Count를 buttonNum으로 전달
         int buttonNum = allObjects.Count;
-        Debug.Log($"[LDA] Total buttons/objects: {buttonNum}");
 
-        // LDA 결과 요청
+        // objectId 목록 추출
+        int[] markerIds = new int[buttonNum];
+        for (int i = 0; i < buttonNum; i++)
+            markerIds[i] = allObjects[i].objectId;
+
+        Debug.Log($"[LDA] Total buttons/objects: {buttonNum}, marker_ids: [{string.Join(", ", markerIds)}]");
+
         yield return StartCoroutine(ldaReceiver.GetResult(
             buttonNum,
-            (result) =>
-            {
-                selectedId = result;
-            },
-            (error) =>
-            {
-                errorMessage = error;
-            }
+            markerIds,
+            (result) => { selectedId = result; },
+            (error) => { errorMessage = error; }
         ));
 
         if (!string.IsNullOrEmpty(errorMessage))
@@ -195,9 +196,9 @@ public class ExperimentManager : MonoBehaviour
             yield break;
         }
 
-        if (selectedId < 1 || selectedId > buttonNum)
+        if (!System.Array.Exists(markerIds, id => id == selectedId))
         {
-            helperText.text = $"Error: Invalid result {selectedId} (expected 1-{buttonNum})";
+            helperText.text = $"Error: Invalid result {selectedId}";
             Debug.LogError($"[LDA] Invalid result: {selectedId}");
             AbortExperiment();
             yield break;
@@ -217,6 +218,19 @@ public class ExperimentManager : MonoBehaviour
 
         if (navRoutine != null)
             StopCoroutine(navRoutine);
+
+        if (isTest)
+        {
+            Debug.Log($"[Test] Selected: {selectedObject.label} (id={selectedId})");
+            // 실험 상태 리셋 후 재시작
+            experimentRunning = false;
+            experimentInitialized = false;
+            objectSelected = false;
+            highlighter.ClearAll();
+            gaze.ResetState();
+            StartExperiment();
+            yield break;
+        }
 
         if (selectedId == 1)
         {
@@ -253,6 +267,18 @@ public class ExperimentManager : MonoBehaviour
 
         if (navRoutine != null)
             StopCoroutine(navRoutine);
+
+        if (isTest)
+        {
+            Debug.Log($"[Test] Clicked: {selectedObject.label} (id={objectId})");
+            experimentRunning = false;
+            experimentInitialized = false;
+            objectSelected = false;
+            highlighter.ClearAll();
+            gaze.ResetState();
+            StartExperiment();
+            return;
+        }
 
         if (objectId == 1)
         {
