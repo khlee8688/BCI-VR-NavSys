@@ -65,7 +65,7 @@ public class ObjectHighlighter : MonoBehaviour
     public void Highlight(int objectId)
     {
         if (uiHighlighter != null &&
-            (uiHighlighter.UIOnlyMode || objectId <= 2))
+            (uiHighlighter.UIOnlyMode || objectId <= 1))
         {
             ClearHighlight();
             uiHighlighter.UIHighlight(objectId);
