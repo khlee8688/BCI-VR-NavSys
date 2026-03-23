@@ -19,7 +19,7 @@ public class ExperimentManager : MonoBehaviour
     [SerializeField] ResultReceiver ldaReceiver;
     [SerializeField] RobotController robot;
     [SerializeField] RectTransform canvasRoot;
-    [SerializeField] TMP_Text helperText;
+    [SerializeField] HelperText helperText;
 
     [Header("Player")]
     [SerializeField] Camera vrCamera;
@@ -39,7 +39,6 @@ public class ExperimentManager : MonoBehaviour
 
     ExperimentObject selectedObject;
     ExperimentObject arrowButtonObject;
-    ExperimentObject exitButtonObject;
     Coroutine navRoutine;
 
     List<ExperimentObject> allObjects;
@@ -80,7 +79,7 @@ public class ExperimentManager : MonoBehaviour
         experimentInitialized = false;
         objectSelected = false;
 
-        helperText.text = "Hold your gaze in one direction";
+        helperText.Show("Hold your gaze in one direction");
 
         tracker = new ObjectTracker();
         filter = new ObjectFilter();
@@ -89,13 +88,6 @@ public class ExperimentManager : MonoBehaviour
         {
             objectId = 1,
             label = "Arrow_Button",
-            bbox = new Rect()
-        };
-
-        exitButtonObject = new ExperimentObject
-        {
-            objectId = 2,
-            label = "Exit_Button",
             bbox = new Rect()
         };
 
@@ -119,7 +111,7 @@ public class ExperimentManager : MonoBehaviour
             navRoutine = null;
         }
 
-        helperText.text = "Experiment Aborted";
+        helperText.Show("Experiment Aborted");
 
         detector.EnableDetection(false);
         stimulus.ResetExperiment();
@@ -138,18 +130,28 @@ public class ExperimentManager : MonoBehaviour
 
         allObjects = new List<ExperimentObject>();
         allObjects.Add(arrowButtonObject);
-        allObjects.Add(exitButtonObject);
-        allObjects.AddRange(trackedObjects); // id >= 3
+        allObjects.AddRange(trackedObjects);
 
         highlighter.UpdateObjects(allObjects);
-
-        helperText.text = "Look at a target or a control button";
 
         if (!experimentInitialized && allObjects.Count > 0)
         {
             experimentInitialized = true;
-            stimulus.StartExperiment(allObjects);
+            StartCoroutine(StartStimulusAfterDelay(3f));
         }
+    }
+
+    IEnumerator StartStimulusAfterDelay(float delay)
+    {
+        helperText.Show("Look at a target or a control button");
+        yield return new WaitForSeconds(delay);
+
+        helperText.Hide();
+        yield return new WaitForSeconds(delay);
+
+        if (!experimentRunning || objectSelected) yield break;
+
+        stimulus.StartExperiment(allObjects);
     }
 
     void OnStimulusEnd()
@@ -162,8 +164,7 @@ public class ExperimentManager : MonoBehaviour
         stimulus.ResetExperiment();
         gaze.StopGazeCheck();
 
-        // LDA 결과 요청 시작
-        helperText.text = "Processing brain signal...";
+        helperText.Show("Processing brain signal...");
         StartCoroutine(WaitForLDAResult());
     }
 
@@ -171,10 +172,8 @@ public class ExperimentManager : MonoBehaviour
     {
         int selectedId = -1;
         string errorMessage = "";
-
         int buttonNum = allObjects.Count;
 
-        // objectId 목록 추출
         int[] markerIds = new int[buttonNum];
         for (int i = 0; i < buttonNum; i++)
             markerIds[i] = allObjects[i].objectId;
@@ -190,7 +189,7 @@ public class ExperimentManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(errorMessage))
         {
-            helperText.text = "Error: " + errorMessage;
+            helperText.Show("Error: " + errorMessage);
             Debug.LogError($"[LDA] Failed: {errorMessage}");
             AbortExperiment();
             yield break;
@@ -198,7 +197,7 @@ public class ExperimentManager : MonoBehaviour
 
         if (!System.Array.Exists(markerIds, id => id == selectedId))
         {
-            helperText.text = $"Error: Invalid result {selectedId}";
+            helperText.Show($"Error: Invalid result {selectedId}");
             Debug.LogError($"[LDA] Invalid result: {selectedId}");
             AbortExperiment();
             yield break;
@@ -207,14 +206,19 @@ public class ExperimentManager : MonoBehaviour
         selectedObject = GetObjectById(selectedId);
         if (selectedObject == null)
         {
-            helperText.text = $"Error: Object not found for ID {selectedId}";
+            helperText.Show($"Error: Object not found for ID {selectedId}");
             Debug.LogError($"[LDA] Object not found: {selectedId}");
             AbortExperiment();
             yield break;
         }
 
         objectSelected = true;
-        helperText.text = "Target selected: " + selectedObject.label;
+
+        // 선택된 오브젝트만 3초 표시
+        helperText.Show("Target selected: " + selectedObject.label, 3f);
+        highlighter.UpdateObjects(new List<ExperimentObject> { selectedObject });
+        yield return new WaitForSeconds(3f);
+        highlighter.ClearAll();
 
         if (navRoutine != null)
             StopCoroutine(navRoutine);
@@ -222,11 +226,9 @@ public class ExperimentManager : MonoBehaviour
         if (isTest)
         {
             Debug.Log($"[Test] Selected: {selectedObject.label} (id={selectedId})");
-            // 실험 상태 리셋 후 재시작
             experimentRunning = false;
             experimentInitialized = false;
             objectSelected = false;
-            highlighter.ClearAll();
             gaze.ResetState();
             StartExperiment();
             yield break;
@@ -236,10 +238,6 @@ public class ExperimentManager : MonoBehaviour
         {
             robot.PublishReset();
             navRoutine = StartCoroutine(MoveToLookingDirection());
-        }
-        else if (selectedId == 2)
-        {
-            Application.Quit();
         }
         else
         {
@@ -263,7 +261,7 @@ public class ExperimentManager : MonoBehaviour
         selectedObject = GetObjectById(objectId);
         if (selectedObject == null) return;
 
-        helperText.text = "Target selected: " + selectedObject.label;
+        helperText.Show("Target selected: " + selectedObject.label, 2f);
 
         if (navRoutine != null)
             StopCoroutine(navRoutine);
@@ -284,10 +282,6 @@ public class ExperimentManager : MonoBehaviour
         {
             robot.PublishReset();
             navRoutine = StartCoroutine(MoveToLookingDirection());
-        }
-        else if (objectId == 2)
-        {
-            Application.Quit();
         }
         else
         {
@@ -320,7 +314,7 @@ public class ExperimentManager : MonoBehaviour
 
         float yaw = CalculateSignedYaw(baseForward, targetDir);
 
-        helperText.text = "Robot is moving";
+        helperText.Show("Robot is moving", 3f);
 
         if (Mathf.Abs(yaw) > 1f)
         {
@@ -359,7 +353,7 @@ public class ExperimentManager : MonoBehaviour
 
         float yaw = CalculateSignedYaw(baseForward, camForward);
 
-        helperText.text = "Moving in the looking direction";
+        helperText.Show("Moving in the looking direction", 3f);
 
         if (Mathf.Abs(yaw) > 1f)
         {

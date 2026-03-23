@@ -10,7 +10,7 @@ public class TrainingManager : MonoBehaviour
     [SerializeField] StimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
     [SerializeField] RectTransform canvasRoot;
-    [SerializeField] TMP_Text helperText;
+    [SerializeField] HelperText helperText;
 
     [Header("Player")]
     [SerializeField] Camera vrCamera;
@@ -47,19 +47,12 @@ public class TrainingManager : MonoBehaviour
             bbox = new Rect()
         });
 
-        sessionObjects.Add(new ExperimentObject
-        {
-            objectId = 2,
-            label = "Exit_Button",
-            bbox = new Rect()
-        });
-
         for (int i = 0; i < TRAINING_OBJECT_NUM; i++)
         {
             sessionObjects.Add(new ExperimentObject
             {
                 objectId = i + 3,
-                label = $"Object_{i + 3}",
+                label = $"Object_{i + 2}",
                 bbox = new Rect()
             });
         }
@@ -82,7 +75,7 @@ public class TrainingManager : MonoBehaviour
         experimentRunning = true;
         currentObjectIndex = 0;
 
-        helperText.text = "Hold your gaze";
+        helperText.Show("Hold your gaze");
 
         sessionCoroutine = StartCoroutine(SessionLoop());
     }
@@ -93,7 +86,7 @@ public class TrainingManager : MonoBehaviour
         {
             if (currentObjectIndex < sessionObjects.Count)
             {
-                helperText.text = "Relax";
+                helperText.Show("Relax");
                 yield return new WaitForSeconds(sessionInterval);
             }
 
@@ -110,17 +103,17 @@ public class TrainingManager : MonoBehaviour
     IEnumerator RunSingleSession()
     {
         sender.SendStimulation(start);
-
         currentObject = sessionObjects[currentObjectIndex];
-
-        highlighter.UpdateObjects(sessionObjects); // 항상 7개 전부 표시
-
+        highlighter.UpdateObjects(sessionObjects);
         stimulus.ResetExperiment();
+
+        // 3초 동안 봐야 할 오브젝트 이름 표시
+        helperText.Show($"Look at: {currentObject.label}");
+        yield return new WaitForSeconds(3f);
+        helperText.Hide();
+        yield return new WaitForSeconds(5f);
         stimulus.StartExperiment(sessionObjects, currentObject.objectId);
 
-        helperText.text = $"Focus on {currentObject.label}";
-
-        // OnStimulusEnd에서 끝날 때까지 대기
         while (stimulus.IsRunning)
             yield return null;
 
@@ -141,7 +134,7 @@ public class TrainingManager : MonoBehaviour
         stimulus.ResetExperiment();
         highlighter.ClearAll();
 
-        helperText.text = "Training Finished";
+        helperText.Show("Training Finished");
 
         sender.SendStimulation(completelyFinished);
     }
@@ -160,6 +153,6 @@ public class TrainingManager : MonoBehaviour
         stimulus.ResetExperiment();
         highlighter.ClearAll();
 
-        helperText.text = "Experiment Aborted";
+        helperText.Show("Experiment Aborted");
     }
 }

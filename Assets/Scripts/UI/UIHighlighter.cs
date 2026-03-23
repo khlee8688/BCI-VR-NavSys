@@ -6,10 +6,9 @@ public class UIHighlighter : MonoBehaviour
 {
     [Header("Button")]
     [SerializeField] Button arrowButton;
-    [SerializeField] Button exitButton;
 
     [Header("UI Only Mode")]
-    [SerializeField] Canvas targetCanvas; // Object_3~7 이 달린 Canvas
+    [SerializeField] Canvas targetCanvas; // Object_2~6 이 달린 Canvas
 
     [Header("Style")]
     [SerializeField] private Color normalColor = Color.clear;
@@ -24,12 +23,11 @@ public class UIHighlighter : MonoBehaviour
 
         // 기본 버튼들
         images.Add(arrowButton.transform.Find("HighlightImage").GetComponent<Image>());
-        images.Add(exitButton.transform.Find("HighlightImage").GetComponent<Image>());
 
         // UI Only Mode: Canvas child 이미지 추가
         if (UIOnlyMode && targetCanvas != null)
         {
-            for (int i = 3; i <= 7; i++)
+            for (int i = 2; i <= 6; i++)
             {
                 var img = targetCanvas
                     .transform
