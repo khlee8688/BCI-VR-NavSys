@@ -22,6 +22,8 @@ public class GazeStabilityDetector : MonoBehaviour
 
     void Update()
     {
+        if (!gazeCheck) return;
+
         Vector3 currentForward = cam.transform.forward;
 
         if (!locked)

@@ -9,6 +9,7 @@ public class BoxClickHandler : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        Debug.Log("box clicked");
         OnBoxClicked?.Invoke(objectId);
     }
 }

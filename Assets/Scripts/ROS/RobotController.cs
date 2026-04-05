@@ -67,6 +67,7 @@ public class RobotController : MonoBehaviour
     {
         if (ros.HasConnectionError)
         {
+            Debug.LogWarning("[RobotController] ROS connection error, skipping");
             return;
         }
 
@@ -75,7 +76,18 @@ public class RobotController : MonoBehaviour
             linear = new Vector3Msg(linear, 0, 0),
             angular = new Vector3Msg(0, 0, angular)
         };
+        ros.Publish(controlTopicName, twist);
+    }
 
+    public void PublishMoveRaw(float linear, float angular)
+    {
+        if (ros.HasConnectionError) return;
+
+        TwistMsg twist = new TwistMsg
+        {
+            linear = new Vector3Msg(linear, 0, 0),
+            angular = new Vector3Msg(0, 0, angular)
+        };
         ros.Publish(controlTopicName, twist);
     }
 

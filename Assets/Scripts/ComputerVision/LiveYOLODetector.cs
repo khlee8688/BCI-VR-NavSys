@@ -7,12 +7,11 @@ public class LiveYOLODetector : MonoBehaviour
 {
     public Camera mainCamera;
     public string serverUrl = "http://127.0.0.1:8000/detect";
-    const int imageWidth = 1600;
-    const int imageHeight = 900;
+    const int imageWidth = 4000;
+    const int imageHeight = 4303;
 
     [Header("Crop")]
-    [SerializeField][Range(0f, 0.5f)] float cropMarginX = 0f;
-    [SerializeField][Range(0f, 0.5f)] float cropMarginY = 0f;
+    [SerializeField] RectTransform canvasRect; // Canvas의 RectTransform 연결
 
     RenderTexture camRT;
     Texture2D screenTex;
@@ -55,17 +54,35 @@ public class LiveYOLODetector : MonoBehaviour
         mainCamera.targetTexture = prevRT;
         mainCamera.cullingMask = originalMask;
 
-        // 크롭 영역 계산
-        int marginX = Mathf.RoundToInt(cropMarginX * imageWidth);
-        int marginY = Mathf.RoundToInt(cropMarginY * imageHeight);
+        // Canvas 기준으로 크롭 영역 계산
+        int cx, cy, cw, ch;
+        if (canvasRect != null)
+        {
+            // Canvas의 월드 코너 4개를 스크린 좌표로 변환
+            Vector3[] corners = new Vector3[4];
+            canvasRect.GetWorldCorners(corners);
 
-        int cx = marginX;
-        int cy = marginY;
-        int cw = imageWidth - marginX * 2;
-        int ch = imageHeight - marginY * 2;
+            // corners 순서: 0=좌하, 1=좌상, 2=우상, 3=우하
+            Vector2 screenMin = mainCamera.WorldToScreenPoint(corners[0]);
+            Vector2 screenMax = mainCamera.WorldToScreenPoint(corners[2]);
+
+            // 렌더 텍스처 기준으로 스케일
+            float scaleX = (float)imageWidth / Screen.width;
+            float scaleY = (float)imageHeight / Screen.height;
+
+            cx = Mathf.Clamp(Mathf.RoundToInt(screenMin.x * scaleX), 0, imageWidth);
+            cy = Mathf.Clamp(Mathf.RoundToInt(screenMin.y * scaleY), 0, imageHeight);
+            cw = Mathf.Clamp(Mathf.RoundToInt((screenMax.x - screenMin.x) * scaleX), 1, imageWidth - cx);
+            ch = Mathf.Clamp(Mathf.RoundToInt((screenMax.y - screenMin.y) * scaleY), 1, imageHeight - cy);
+        }
+        else
+        {
+            // canvasRect 없으면 전체 이미지 사용
+            cx = 0; cy = 0; cw = imageWidth; ch = imageHeight;
+        }
 
         // 크롭된 픽셀 추출 (Y 반전)
-        Color[] pixels = screenTex.GetPixels(cx, imageHeight - cy - ch, cw, ch);
+        Color[] pixels = screenTex.GetPixels(cx, cy, cw, ch);
 
         if (croppedTex == null || croppedTex.width != cw || croppedTex.height != ch)
         {

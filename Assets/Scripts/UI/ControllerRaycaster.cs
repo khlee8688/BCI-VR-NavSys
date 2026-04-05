@@ -31,16 +31,33 @@ public class ControllerRaycaster : MonoBehaviour
     {
         Ray ray = new Ray(controllerTransform.position, controllerTransform.forward);
 
-        // GraphicRaycaster로 UI 히트 체크
+        // Canvas 평면과의 교차점 계산
+        Plane canvasPlane = new Plane(-canvas.transform.forward, canvas.transform.position);
+        float distance;
+
+        if (!canvasPlane.Raycast(ray, out distance))
+            return;
+
+        // Ray가 Canvas 평면과 만나는 월드 좌표
+        Vector3 hitWorld = ray.GetPoint(distance);
+
+        // 월드 좌표 → 스크린 좌표
+        Vector2 screenPos = uiCamera.WorldToScreenPoint(hitWorld);
+
+        Debug.Log($"[Raycaster] Hit screen pos: {screenPos}");
+
         PointerEventData ped = new PointerEventData(EventSystem.current);
-        ped.position = uiCamera.WorldToScreenPoint(controllerTransform.position + controllerTransform.forward * 0.1f);
+        ped.position = screenPos;
 
         var results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(ped, results);
 
+        Debug.Log($"[Raycaster] Raycast results: {results.Count}");
+
         foreach (var result in results)
         {
-            var handler = result.gameObject.GetComponent<BoxClickHandler>();
+            Debug.Log($"[Raycaster] Hit: {result.gameObject.name}");
+            var handler = result.gameObject.GetComponentInParent<BoxClickHandler>();
             if (handler != null)
             {
                 handler.OnPointerClick(ped);

@@ -2,7 +2,6 @@ using Oculus.Interaction.UnityCanvas;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.SearchService;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -115,7 +114,7 @@ public class ExperimentManager : MonoBehaviour
 
         detector.EnableDetection(false);
         stimulus.ResetExperiment();
-        gaze.ResetState();
+        gaze.StartGazeCheck();
         highlighter.ClearAll();
         robot.Stop();
     }
