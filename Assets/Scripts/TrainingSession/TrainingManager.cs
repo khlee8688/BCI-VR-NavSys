@@ -51,7 +51,7 @@ public class TrainingManager : MonoBehaviour
         {
             sessionObjects.Add(new ExperimentObject
             {
-                objectId = i + 3,
+                objectId = i + 2,
                 label = $"Object_{i + 2}",
                 bbox = new Rect()
             });

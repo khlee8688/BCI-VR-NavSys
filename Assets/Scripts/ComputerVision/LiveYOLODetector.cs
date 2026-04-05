@@ -7,17 +7,20 @@ public class LiveYOLODetector : MonoBehaviour
 {
     public Camera mainCamera;
     public string serverUrl = "http://127.0.0.1:8000/detect";
-
     const int imageWidth = 1600;
     const int imageHeight = 900;
 
+    [Header("Crop")]
+    [SerializeField][Range(0f, 0.5f)] float cropMarginX = 0f;
+    [SerializeField][Range(0f, 0.5f)] float cropMarginY = 0f;
+
     RenderTexture camRT;
     Texture2D screenTex;
+    Texture2D croppedTex;
 
     public event System.Action<List<Detection>> OnDetections;
-
     bool canDetect = false;
-    bool isDetecting = false;   // 중복 요청 방지
+    bool isDetecting = false;
 
     void Start()
     {
@@ -29,7 +32,6 @@ public class LiveYOLODetector : MonoBehaviour
     {
         if (!canDetect) return;
         if (isDetecting) return;
-
         StartCoroutine(CaptureAndSend());
     }
 
@@ -38,8 +40,6 @@ public class LiveYOLODetector : MonoBehaviour
         isDetecting = true;
 
         int originalMask = mainCamera.cullingMask;
-
-        // UI 레이어 제외
         int uiLayer = LayerMask.NameToLayer("UI");
         mainCamera.cullingMask &= ~(1 << uiLayer);
 
@@ -50,16 +50,37 @@ public class LiveYOLODetector : MonoBehaviour
         RenderTexture.active = camRT;
         screenTex.ReadPixels(new Rect(0, 0, imageWidth, imageHeight), 0, 0);
         screenTex.Apply();
-
         RenderTexture.active = null;
-        mainCamera.targetTexture = prevRT;
 
-        // 마스크 복구
+        mainCamera.targetTexture = prevRT;
         mainCamera.cullingMask = originalMask;
 
-        byte[] jpg = screenTex.EncodeToJPG(80);
+        // 크롭 영역 계산
+        int marginX = Mathf.RoundToInt(cropMarginX * imageWidth);
+        int marginY = Mathf.RoundToInt(cropMarginY * imageHeight);
 
-        UnityWebRequest req = new UnityWebRequest(serverUrl, "POST");
+        int cx = marginX;
+        int cy = marginY;
+        int cw = imageWidth - marginX * 2;
+        int ch = imageHeight - marginY * 2;
+
+        // 크롭된 픽셀 추출 (Y 반전)
+        Color[] pixels = screenTex.GetPixels(cx, imageHeight - cy - ch, cw, ch);
+
+        if (croppedTex == null || croppedTex.width != cw || croppedTex.height != ch)
+        {
+            if (croppedTex != null) Destroy(croppedTex);
+            croppedTex = new Texture2D(cw, ch, TextureFormat.RGB24, false);
+        }
+
+        croppedTex.SetPixels(pixels);
+        croppedTex.Apply();
+
+        byte[] jpg = croppedTex.EncodeToJPG(80);
+
+        string url = $"{serverUrl}?offset_x={cx}&offset_y={cy}&orig_w={imageWidth}&orig_h={imageHeight}";
+
+        UnityWebRequest req = new UnityWebRequest(url, "POST");
         req.uploadHandler = new UploadHandlerRaw(jpg);
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/octet-stream");
@@ -80,7 +101,6 @@ public class LiveYOLODetector : MonoBehaviour
         isDetecting = false;
     }
 
-    // 외부 제어용
     public void EnableDetection(bool enable)
     {
         canDetect = enable;
@@ -89,6 +109,7 @@ public class LiveYOLODetector : MonoBehaviour
     void OnDestroy()
     {
         if (camRT != null) camRT.Release();
+        if (croppedTex != null) Destroy(croppedTex);
     }
 }
 
