@@ -6,28 +6,31 @@ using UnityEngine;
 public class TrainingManager : MonoBehaviour
 {
     [Header("Core")]
-    [SerializeField] StimulusController stimulus;
-    [SerializeField] StimulusSender sender;
+    //[SerializeField] StimulusController stimulus;
+    [SerializeField] SSVEP_StimulusContorller stimulus;
+    //[SerializeField] StimulusSender sender;
+    [SerializeField] private SSVEPStimulusSender sender;
     [SerializeField] ObjectHighlighter highlighter;
     [SerializeField] RectTransform canvasRoot;
     [SerializeField] HelperText helperText;
+    [SerializeField] private ResultReceiver resultReceiver;// add for result receiving
 
     [Header("Player")]
     [SerializeField] Camera vrCamera;
     [SerializeField] GameObject player;
 
     [Header("Timing")]
-    [SerializeField] float sessionInterval = 10f; // ¼¼¼Ç °£ °£°İ
+    [SerializeField] float sessionInterval = 5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     bool experimentRunning = false;
 
     // === Objects ===
-    List<ExperimentObject> sessionObjects;   // Arrow, Exit Æ÷ÇÔ ÃÑ 7°³
+    List<ExperimentObject> sessionObjects;   // Arrow, Exit ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ 7ï¿½ï¿½
     ExperimentObject currentObject;
     int currentObjectIndex = 0;
 
-    const int TRAINING_OBJECT_NUM = 5; // µ¿Àû »ı¼º 5°³
-
+    const int TRAINING_OBJECT_NUM = 5; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 5ï¿½ï¿½ ìê·¹ìˆ˜ã„´
+    private readonly int[] markerIds = { 2, 3, 4, 5, 6 };//add for ids
     public byte finish = 9;
     public byte start = 8;
     private byte completelyFinished = 49;
@@ -40,12 +43,13 @@ public class TrainingManager : MonoBehaviour
 
         sessionObjects = new List<ExperimentObject>();
 
-        sessionObjects.Add(new ExperimentObject
-        {
-            objectId = 1,
-            label = "Arrow_Button",
-            bbox = new Rect()
-        });
+        //sessionObjects.Add(new ExperimentObject
+        //{
+        //    objectId = 1,
+        //    label = "Arrow_Button",
+        //    bbox = new Rect()
+        //});
+        
 
         for (int i = 0; i < TRAINING_OBJECT_NUM; i++)
         {
@@ -57,8 +61,8 @@ public class TrainingManager : MonoBehaviour
             });
         }
 
-        // ÃÊ±â »óÅÂ: ÃøÁ¤ Â÷´Ü
-        sender.SendStimulation(finish);
+        // ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        //sender.SendStimulation(finish);
 
         StartExperiment();
     }
@@ -94,7 +98,7 @@ public class TrainingManager : MonoBehaviour
 
             currentObjectIndex++;
 
-            // highlighter.ClearAll();
+            highlighter.ClearAll();
         }
 
         FinishExperiment();
@@ -102,41 +106,107 @@ public class TrainingManager : MonoBehaviour
 
     IEnumerator RunSingleSession()
     {
-        sender.SendStimulation(start);
+        
         currentObject = sessionObjects[currentObjectIndex];
         highlighter.UpdateObjects(sessionObjects);
         stimulus.ResetExperiment();
 
-        // 3ÃÊ µ¿¾È ºÁ¾ß ÇÒ ¿ÀºêÁ§Æ® ÀÌ¸§ Ç¥½Ã
+        // 3ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ì¸ï¿½ Ç¥ï¿½ï¿½
         helperText.Show($"Look at: {currentObject.label}");
-        yield return new WaitForSeconds(3f);
+        sender.SendStimulation(start);//ì¶”ê°€
+        yield return new WaitForSeconds(1f);
         helperText.Hide();
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(2f);
         stimulus.StartExperiment(sessionObjects, currentObject.objectId);
 
         while (stimulus.IsRunning)
             yield return null;
-
+        yield return new WaitForSeconds(1f);
         sender.SendStimulation(finish);
+
+        //for ssvep result receiving
+        // Pythonì— FBCCA ë¶„ë¥˜ ìš”ì²­
+        int selectedId = -1;
+        string errorMessage = null;
+
+        yield return StartCoroutine(
+            resultReceiver.GetResult(
+                TRAINING_OBJECT_NUM,
+                markerIds,
+                (result) => { selectedId = result; },
+                (error) => { errorMessage = error; }
+            )
+        );
+
+        if (errorMessage != null)
+        {
+            Debug.LogError($"[SSVEP] Error: {errorMessage}");
+        }
+        else
+        {
+            Debug.Log($"[SSVEP] ì •ë‹µ ID: {currentObject.objectId}");
+            Debug.Log($"[SSVEP] ë¶„ë¥˜ ID: {selectedId}");
+
+            if (selectedId == currentObject.objectId)
+            {
+                Debug.Log("[SSVEP] Correct");
+            }
+            else if (selectedId == -1)
+            {
+                Debug.LogWarning("[SSVEP] Rejected");
+            }
+            else
+            {
+                Debug.LogWarning("[SSVEP] Incorrect");
+            }
+        }
     }
 
     void OnStimulusEnd()
     {
-        // ½ÇÁ¦ ¼¼¼Ç Á¾·á Ã³¸®´Â ÄÚ·çÆ¾¿¡¼­ ´ã´ç
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½Ú·ï¿½Æ¾ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     }
+
+    //void FinishExperiment()
+    //{
+    //    experimentRunning = false;
+
+    //    sender.SendStimulation(finish);
+
+    //    stimulus.ResetExperiment();
+    //    highlighter.ClearAll();
+
+    //    helperText.Show("Training Finished");
+
+    //    sender.SendStimulation(completelyFinished);
+    //}
 
     void FinishExperiment()
     {
         experimentRunning = false;
 
-        sender.SendStimulation(finish);
+        //sender.SendStimulation(finish);
 
         stimulus.ResetExperiment();
         highlighter.ClearAll();
 
         helperText.Show("Training Finished");
+        
 
         sender.SendStimulation(completelyFinished);
+
+        StartCoroutine(QuitAfterDelay());
+    }
+
+    IEnumerator QuitAfterDelay()
+    {
+        yield return new WaitForSeconds(2f);
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
     }
 
     public void AbortExperiment()
